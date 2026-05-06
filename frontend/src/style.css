@@ -1,0 +1,146 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  background: #f0f4f1;
+  color: #1a2e1f;
+  min-height: 100vh;
+}
+
+/* ── Navigation ── */
+nav {
+  background: #1b4332;
+  color: #fff;
+  padding: 0 1.5rem;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+nav .brand { font-weight: 700; font-size: 1.1rem; letter-spacing: 0.02em; margin-right: 0.5rem; }
+nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 0.95rem; }
+nav a:hover, nav a.router-link-active { color: #fff; text-decoration: underline; }
+nav .sep { color: rgba(255,255,255,0.3); }
+nav .nav-right { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
+nav .username { font-size: 0.85rem; opacity: 0.7; }
+nav .small-link { font-size: 0.82rem; opacity: 0.75; }
+nav .btn-logout {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff;
+  padding: 0.3rem 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+nav .btn-logout:hover { background: rgba(255,255,255,0.22); }
+
+/* ── Main content ── */
+main {
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 1.25rem;
+}
+
+h1 { font-size: 1.6rem; color: #1b4332; margin-bottom: 1.25rem; }
+h2 { font-size: 1.35rem; color: #1b4332; margin-bottom: 1rem; }
+h3 { font-size: 1.1rem; color: #2d6a4f; margin-bottom: 0.75rem; }
+
+/* ── Controls bar ── */
+.controls {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.controls label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #444; }
+
+/* ── Inputs ── */
+input[type=text], input[type=number], input[type=date], input[type=password], input[type=email], select, textarea {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #c5d5c9;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  background: #fff;
+  color: #1a2e1f;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #2d6a4f;
+  box-shadow: 0 0 0 3px rgba(45,106,79,0.12);
+}
+select { cursor: pointer; min-width: 140px; }
+
+/* ── Buttons ── */
+button, .btn {
+  padding: 0.45rem 1.1rem;
+  background: #2d6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  transition: background 0.15s;
+}
+button:hover, .btn:hover { background: #1b4332; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.danger { background: #b91c1c; }
+button.danger:hover { background: #991b1b; }
+button.secondary { background: #6b7280; }
+button.secondary:hover { background: #4b5563; }
+button.sm { padding: 0.3rem 0.75rem; font-size: 0.84rem; }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+thead tr { background: #1b4332; color: #fff; }
+th { padding: 0.6rem 0.9rem; text-align: left; font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
+td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #e9f0eb; font-size: 0.93rem; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #f0f8f3; }
+
+td.best4  { background: #d1fae5; font-weight: 600; }
+td.absent { color: #9ca3af; font-style: italic; }
+td.total  { font-weight: 700; }
+tr.absent-row td { color: #9ca3af; font-style: italic; }
+
+/* ── Cards / forms ── */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 1.5rem;
+}
+
+/* ── Login ── */
+.login-wrap {
+  max-width: 380px;
+  margin: 5rem auto 0;
+}
+.login-title { text-align: center; margin-bottom: 1.5rem; }
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-size: 0.88rem; color: #555; margin-bottom: 0.3rem; }
+.field input { width: 100%; }
+
+/* ── Misc ── */
+.legend { font-size: 0.82rem; color: #6b7280; margin-top: 0.6rem; }
+.error  { color: #b91c1c; font-size: 0.9rem; margin: 0.5rem 0; }
+.success { color: #16a34a; font-weight: 600; }
+.loading { color: #6b7280; padding: 2rem 0; text-align: center; }
+a { color: #2d6a4f; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.back-link { display: inline-block; margin-bottom: 1rem; font-size: 0.9rem; }
+.row-gap { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1rem; }
+.row-gap label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.88rem; color: #555; }
