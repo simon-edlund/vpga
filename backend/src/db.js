@@ -15,17 +15,16 @@ db.pragma('journal_mode = WAL')
 db.pragma('foreign_keys = ON')
 
 db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    username      TEXT    UNIQUE NOT NULL,
-    password_hash TEXT    NOT NULL,
-    is_admin      INTEGER NOT NULL DEFAULT 0
-  );
-
   CREATE TABLE IF NOT EXISTS members (
-    id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    name   TEXT    NOT NULL,
-    active INTEGER NOT NULL DEFAULT 1
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    name           TEXT    NOT NULL,
+    golf_id        TEXT    NOT NULL DEFAULT '',
+    handicap       REAL    NOT NULL DEFAULT 0,
+    email          TEXT    NOT NULL UNIQUE,
+    active         INTEGER NOT NULL DEFAULT 1,
+    is_admin       INTEGER NOT NULL DEFAULT 0,
+    password_hash  TEXT,
+    email_verified INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS rounds (
@@ -47,12 +46,47 @@ db.exec(`
   );
 `)
 
-// Seed default admin user (admin / admin) – change password after first login
-const adminExists = db.prepare('SELECT id FROM users WHERE username = ?').get('admin')
-if (!adminExists) {
-  const hash = bcrypt.hashSync('admin', 10)
-  db.prepare('INSERT INTO users (username, password_hash, is_admin) VALUES (?,?,1)').run('admin', hash)
-  console.log('Created default admin user: admin / admin  (please change the password)')
+function addColumnIfMissing(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all()
+  const hasColumn = columns.some(info => info.name === column)
+  if (!hasColumn) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+  }
+}
+
+addColumnIfMissing('rounds', 'date_end',    "TEXT NOT NULL DEFAULT ''")
+addColumnIfMissing('rounds', 'start_time',  "TEXT NOT NULL DEFAULT ''")
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT NOT NULL,
+    date       TEXT NOT NULL,
+    date_end   TEXT NOT NULL DEFAULT '',
+    start_time TEXT NOT NULL DEFAULT '',
+    notes      TEXT NOT NULL DEFAULT ''
+  );
+`)
+
+addColumnIfMissing('members', 'golf_id', "TEXT NOT NULL DEFAULT ''")
+addColumnIfMissing('members', 'handicap', 'REAL NOT NULL DEFAULT 0')
+addColumnIfMissing('members', 'email', "TEXT NOT NULL DEFAULT ''")
+addColumnIfMissing('members', 'is_admin', 'INTEGER NOT NULL DEFAULT 0')
+addColumnIfMissing('members', 'password_hash', 'TEXT')
+addColumnIfMissing('members', 'email_verified', 'INTEGER NOT NULL DEFAULT 0')
+
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_members_email ON members(email)')
+
+const simon = db.prepare('SELECT id FROM members WHERE email = ?').get('simon@edlund.nl')
+if (!simon) {
+  db.prepare(
+    `INSERT INTO members (
+      name, golf_id, handicap, email, active, is_admin, password_hash, email_verified
+    ) VALUES (?, ?, ?, ?, 1, 1, NULL, 0)`
+  ).run('Simon Edlund', '', 0, 'simon@edlund.nl')
+  console.log('Created initial admin member Simon Edlund (simon@edlund.nl)')
+} else {
+  db.prepare('UPDATE members SET is_admin = 1, active = 1 WHERE email = ?').run('simon@edlund.nl')
 }
 
 module.exports = db

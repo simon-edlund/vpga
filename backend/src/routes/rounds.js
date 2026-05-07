@@ -2,6 +2,36 @@ const router = require('express').Router()
 const db = require('../db')
 const { requireAuth, requireAdmin } = require('../middleware/auth')
 
+function addPlacementLabels(rows, scoreKey) {
+  let lastScore = null
+  let currentPlace = 0
+  let tieCount = 0
+
+  return rows.map((row, index) => {
+    const score = row[scoreKey]
+    if (score === null) {
+      return { ...row, place: null }
+    }
+
+    if (lastScore === null || score !== lastScore) {
+      currentPlace = index + 1
+      tieCount = 1
+    } else {
+      tieCount += 1
+    }
+
+    lastScore = score
+
+    const nextScore = index + 1 < rows.length ? rows[index + 1][scoreKey] : null
+    const isTied = tieCount > 1 || nextScore === score
+
+    return {
+      ...row,
+      place: `${isTied ? 'T' : ''}${currentPlace}`,
+    }
+  })
+}
+
 // List rounds (optionally filtered by season)
 router.get('/', requireAuth, (req, res) => {
   const { season } = req.query
@@ -13,11 +43,17 @@ router.get('/', requireAuth, (req, res) => {
 
 // Create a round
 router.post('/', requireAdmin, (req, res) => {
-  const { season, round_number, date, course, notes } = req.body
+  const { season, round_number, date, date_end, start_time, course, notes } = req.body
+  if (!date) {
+    return res.status(400).json({ error: 'Date is required' })
+  }
+  if (!course?.trim()) {
+    return res.status(400).json({ error: 'Course is required' })
+  }
   try {
     const r = db.prepare(
-      'INSERT INTO rounds (season, round_number, date, course, notes) VALUES (?,?,?,?,?)'
-    ).run(season, round_number, date, course || '', notes || '')
+      'INSERT INTO rounds (season, round_number, date, date_end, start_time, course, notes) VALUES (?,?,?,?,?,?,?)'
+    ).run(season, round_number, date, date_end || '', start_time || '', course.trim(), notes || '')
     res.status(201).json(db.prepare('SELECT * FROM rounds WHERE id = ?').get(r.lastInsertRowid))
   } catch (e) {
     res.status(400).json({ error: e.message })
@@ -26,10 +62,16 @@ router.post('/', requireAdmin, (req, res) => {
 
 // Update a round
 router.put('/:id', requireAdmin, (req, res) => {
-  const { season, round_number, date, course, notes } = req.body
+  const { season, round_number, date, date_end, start_time, course, notes } = req.body
+  if (!date) {
+    return res.status(400).json({ error: 'Date is required' })
+  }
+  if (!course?.trim()) {
+    return res.status(400).json({ error: 'Course is required' })
+  }
   try {
-    db.prepare('UPDATE rounds SET season=?, round_number=?, date=?, course=?, notes=? WHERE id=?')
-      .run(season, round_number, date, course || '', notes || '', req.params.id)
+    db.prepare('UPDATE rounds SET season=?, round_number=?, date=?, date_end=?, start_time=?, course=?, notes=? WHERE id=?')
+      .run(season, round_number, date, date_end || '', start_time || '', course.trim(), notes || '', req.params.id)
     const r = db.prepare('SELECT * FROM rounds WHERE id = ?').get(req.params.id)
     if (!r) return res.status(404).json({ error: 'Not found' })
     res.json(r)
@@ -84,7 +126,7 @@ router.get('/:id/scores', requireAuth, (req, res) => {
     return a.net_strokes - b.net_strokes
   })
 
-  res.json({ round, scores })
+  res.json({ round, scores: addPlacementLabels(scores, 'net_strokes') })
 })
 
 // Save scores for a round.

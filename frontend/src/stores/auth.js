@@ -3,11 +3,24 @@ import { ref, computed } from 'vue'
 import api from '../api/index.js'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token    = ref(localStorage.getItem('token'))
-  const username = ref(localStorage.getItem('username'))
-  const isAdmin  = ref(localStorage.getItem('is_admin') === 'true')
+  const token = ref(localStorage.getItem('token'))
+  const name = ref(localStorage.getItem('name'))
+  const email = ref(localStorage.getItem('email'))
+  const isAdmin = ref(localStorage.getItem('is_admin') === 'true')
 
   const isLoggedIn = computed(() => !!token.value)
+
+  function applyLoginResponse(data) {
+    token.value = data.token
+    name.value = data.name
+    email.value = data.email
+    isAdmin.value = !!data.is_admin
+    localStorage.setItem('token', token.value)
+    localStorage.setItem('name', name.value)
+    localStorage.setItem('email', email.value)
+    localStorage.setItem('is_admin', isAdmin.value)
+    api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+  }
 
   function init() {
     if (token.value) {
@@ -15,26 +28,34 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(user, password) {
-    const res = await api.post('/api/auth/login', { username: user, password })
-    token.value    = res.data.token
-    username.value = res.data.username
-    isAdmin.value  = !!res.data.is_admin
-    localStorage.setItem('token',    token.value)
-    localStorage.setItem('username', username.value)
-    localStorage.setItem('is_admin', isAdmin.value)
-    api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+  async function login(userEmail, password) {
+    const res = await api.post('/api/auth/login', { email: userEmail, password })
+    if (res.data.token) {
+      applyLoginResponse(res.data)
+    }
+    return res.data
+  }
+
+  async function completeFirstLogin(setupToken, password) {
+    const res = await api.post('/api/auth/complete-first-login', {
+      setup_token: setupToken,
+      password,
+    })
+    applyLoginResponse(res.data)
+    return res.data
   }
 
   function logout() {
-    token.value    = null
-    username.value = null
-    isAdmin.value  = false
+    token.value = null
+    name.value = null
+    email.value = null
+    isAdmin.value = false
     localStorage.removeItem('token')
-    localStorage.removeItem('username')
+    localStorage.removeItem('name')
+    localStorage.removeItem('email')
     localStorage.removeItem('is_admin')
     delete api.defaults.headers.common['Authorization']
   }
 
-  return { token, username, isAdmin, isLoggedIn, init, login, logout }
+  return { token, name, email, isAdmin, isLoggedIn, init, login, completeFirstLogin, logout }
 })

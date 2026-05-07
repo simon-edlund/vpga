@@ -1,20 +1,20 @@
 <template>
   <div>
-    <h2>Enter Scores</h2>
+    <h2>{{ localeStore.t('enterScores') }}</h2>
 
     <div class="controls">
       <label>
-        Season
+        {{ localeStore.t('season') }}
         <select v-model.number="selectedSeason" @change="loadRounds">
           <option v-for="s in seasons" :key="s" :value="s">{{ s }}</option>
         </select>
       </label>
       <label>
-        Round
+        {{ localeStore.t('selectRound') }}
         <select v-model="selectedRoundId" @change="loadScores">
-          <option value="">— Select round —</option>
+          <option value="">- {{ localeStore.t('selectRoundPlaceholder') }} -</option>
           <option v-for="r in rounds" :key="r.id" :value="r.id">
-            Round {{ r.round_number }} – {{ r.date }}{{ r.course ? ' · ' + r.course : '' }}
+            VPGA{{ r.round_number }} - {{ r.date }}{{ r.course ? ' · ' + r.course : '' }}
           </option>
         </select>
       </label>
@@ -23,15 +23,14 @@
     <template v-if="selectedRoundId && members.length > 0">
       <div class="card">
         <p style="color:#6b7280;font-size:0.9rem;margin-bottom:1rem">
-          Enter net strokes for each player. Leave blank for absent players
-          (they will automatically receive the highest score&nbsp;+&nbsp;1).
+          {{ localeStore.t('enterNetStrokesHelp') }}
         </p>
 
         <table>
           <thead>
             <tr>
-              <th>Player</th>
-              <th style="text-align:center">Net strokes</th>
+              <th>{{ localeStore.t('player') }}</th>
+              <th style="text-align:center">{{ localeStore.t('netStrokes') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -43,7 +42,7 @@
                   type="number"
                   min="50"
                   max="200"
-                  placeholder="absent"
+                  :placeholder="localeStore.t('absentPlaceholder')"
                   style="width:90px;text-align:center"
                 />
               </td>
@@ -52,18 +51,18 @@
         </table>
 
         <div style="margin-top:1rem;display:flex;align-items:center;gap:1rem">
-          <button @click="saveScores">Save Scores</button>
-          <span v-if="saved" class="success">✓ Saved!</span>
+          <button @click="saveScores">{{ localeStore.t('saveScores') }}</button>
+          <span v-if="saved" class="success">✓ {{ localeStore.t('saved') }}</span>
         </div>
       </div>
     </template>
 
     <div v-else-if="!selectedRoundId && rounds.length > 0" class="card" style="color:#6b7280">
-      Select a round above to enter scores.
+      {{ localeStore.t('selectRoundAbove') }}
     </div>
 
     <div v-else-if="seasons.length === 0" class="card" style="color:#6b7280">
-      No rounds exist yet. Create rounds first.
+      {{ localeStore.t('noRoundsCreateFirst') }}
     </div>
   </div>
 </template>
@@ -71,6 +70,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../../api/index.js'
+import { useLocaleStore } from '../../stores/locale.js'
 
 const seasons        = ref([])
 const selectedSeason = ref(new Date().getFullYear())
@@ -79,6 +79,7 @@ const selectedRoundId = ref('')
 const members        = ref([])
 const scoreInputs    = ref({})   // member_id -> string (number or '')
 const saved          = ref(false)
+const localeStore = useLocaleStore()
 
 async function loadSeasons() {
   const res = await api.get('/api/standings')

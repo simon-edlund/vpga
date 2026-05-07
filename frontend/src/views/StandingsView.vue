@@ -1,44 +1,44 @@
 <template>
   <div>
-    <h2>Season Standings</h2>
+    <h2>{{ localeStore.t('seasonStandings') }}</h2>
 
     <div class="controls">
       <label>
-        Season
+        {{ localeStore.t('season') }}
         <select v-model="selectedSeason" @change="loadStandings">
           <option v-for="s in seasons" :key="s" :value="s">{{ s }}</option>
         </select>
       </label>
     </div>
 
-    <p v-if="loading" class="loading">Loading…</p>
+    <p v-if="loading" class="loading">{{ localeStore.t('loading') }}</p>
 
     <template v-else-if="data">
       <div v-if="data.rounds.length === 0" class="card">
-        No rounds have been created for {{ selectedSeason }} yet.
+        {{ localeStore.t('noRoundsForSeason', { season: selectedSeason }) }}
       </div>
       <div v-else class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th>Player</th>
+              <th>{{ localeStore.t('player') }}</th>
               <th
                 v-for="round in data.rounds"
                 :key="round.id"
                 style="text-align:center"
               >
                 <router-link :to="'/rounds/' + round.id" style="color:#a7f3d0">
-                  R{{ round.round_number }}
+                  VPGA{{ round.round_number }}
                 </router-link>
                 <div style="font-weight:400;font-size:0.78rem;opacity:0.8">{{ round.date }}</div>
               </th>
-              <th style="text-align:center">Best&nbsp;4</th>
+              <th style="text-align:center">{{ localeStore.t('best4') }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(member, idx) in data.standings" :key="member.id">
-              <td>{{ member.total !== null ? idx + 1 : '–' }}</td>
+            <tr v-for="member in data.standings" :key="member.id">
+              <td>{{ member.place ?? '–' }}</td>
               <td>{{ member.name }}</td>
               <td
                 v-for="rs in member.roundScores"
@@ -47,7 +47,7 @@
                 style="text-align:center"
               >
                 <span v-if="rs.score !== null">
-                  {{ rs.score }}<sup v-if="rs.absent" title="Absent – assigned max+1">*</sup>
+                  {{ rs.score }}<sup v-if="rs.absent" :title="localeStore.t('absent')">*</sup>
                 </span>
                 <span v-else style="color:#ccc">–</span>
               </td>
@@ -58,14 +58,14 @@
           </tbody>
         </table>
         <p class="legend">
-          <strong>Best 4</strong> cells are highlighted green. &nbsp;
-          * Absent player – assigned highest score in that round + 1.
+          <strong>{{ localeStore.t('best4') }}</strong> {{ localeStore.t('best4Legend') }} &nbsp;
+          * {{ localeStore.t('absentLegend') }}
         </p>
       </div>
     </template>
 
     <div v-else-if="!loading" class="card">
-      No seasons found. An admin needs to create rounds first.
+      {{ localeStore.t('noSeasonsFound') }}
     </div>
   </div>
 </template>
@@ -73,11 +73,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../api/index.js'
+import { useLocaleStore } from '../stores/locale.js'
 
 const seasons        = ref([])
 const selectedSeason = ref(new Date().getFullYear())
 const data           = ref(null)
 const loading        = ref(false)
+const localeStore = useLocaleStore()
 
 async function loadSeasons() {
   const res = await api.get('/api/standings')

@@ -1,35 +1,35 @@
 <template>
   <div>
-    <router-link to="/rounds" class="back-link">← Back to rounds</router-link>
+    <router-link to="/rounds" class="back-link">← {{ localeStore.t('backToRounds') }}</router-link>
 
     <div v-if="round">
-      <h2>Round {{ round.round_number }} &mdash; {{ round.date }}</h2>
+      <h2>VPGA{{ round.round_number }} &mdash; {{ round.date }}</h2>
       <p v-if="round.course" style="color:#6b7280;margin-bottom:1rem">📍 {{ round.course }}</p>
       <p v-if="round.notes"  style="color:#6b7280;margin-bottom:1rem">{{ round.notes }}</p>
     </div>
 
-    <p v-if="loading" class="loading">Loading…</p>
+    <p v-if="loading" class="loading">{{ localeStore.t('loading') }}</p>
 
     <template v-else-if="scores.length > 0">
       <table>
         <thead>
           <tr>
             <th>#</th>
-            <th>Player</th>
-            <th style="text-align:center">Net strokes</th>
+            <th>{{ localeStore.t('player') }}</th>
+            <th style="text-align:center">{{ localeStore.t('netStrokes') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="(s, idx) in scores"
+            v-for="s in scores"
             :key="s.member_id"
             :class="{ 'absent-row': s.absent }"
           >
-            <td>{{ !s.absent ? idx + 1 : '–' }}</td>
+            <td>{{ s.place ?? '–' }}</td>
             <td>{{ s.name }}</td>
             <td style="text-align:center">
               <span v-if="s.net_strokes !== null">
-                {{ s.net_strokes }}<sup v-if="s.absent" title="Absent">*</sup>
+                {{ s.net_strokes }}<sup v-if="s.absent" :title="localeStore.t('absent')">*</sup>
               </span>
               <span v-else style="color:#ccc">–</span>
             </td>
@@ -37,12 +37,12 @@
         </tbody>
       </table>
       <p v-if="scores.some(s => s.absent)" class="legend">
-        * Absent – assigned highest score + 1
+        * {{ localeStore.t('absentLegend') }}
       </p>
     </template>
 
     <div v-else-if="!loading" class="card">
-      No scores have been entered for this round yet.
+      {{ localeStore.t('noScoresYet') }}
     </div>
   </div>
 </template>
@@ -51,11 +51,13 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api/index.js'
+import { useLocaleStore } from '../stores/locale.js'
 
 const route   = useRoute()
 const round   = ref(null)
 const scores  = ref([])
 const loading = ref(true)
+const localeStore = useLocaleStore()
 
 onMounted(async () => {
   try {

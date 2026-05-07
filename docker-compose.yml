@@ -1,0 +1,20 @@
+services:
+  vpga:
+    build: .
+    image: vpga:latest
+    container_name: vpga
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      # SQLite database — survives container restarts/upgrades
+      - vpga-data:/data
+    environment:
+      # REQUIRED: change this to a long random string before deploying!
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET env var must be set}
+      NODE_ENV: production
+      PORT: 3001
+      DB_PATH: /data/golf.db
+
+volumes:
+  vpga-data:

@@ -1,18 +1,30 @@
 <template>
-  <nav v-if="auth.isLoggedIn">
-    <span class="brand">⛳ Golf Tour</span>
-    <router-link to="/">Standings</router-link>
-    <router-link to="/rounds">Rounds</router-link>
-    <template v-if="auth.isAdmin">
+  <nav>
+    <span class="brand">⛳ VPGA</span>
+    <template v-if="auth.isLoggedIn">
+      <router-link to="/">{{ localeStore.t('standings') }}</router-link>
+      <router-link to="/rounds">{{ localeStore.t('rounds') }}</router-link>
+    </template>
+    <template v-if="auth.isLoggedIn && auth.isAdmin">
       <span class="sep">|</span>
-      <router-link to="/admin/members">Members</router-link>
-      <router-link to="/admin/rounds">Rounds</router-link>
-      <router-link to="/admin/scores">Enter Scores</router-link>
+      <router-link to="/admin/members">{{ localeStore.t('members') }}</router-link>
+      <router-link to="/admin/rounds">{{ localeStore.t('rounds') }}</router-link>
+      <router-link to="/admin/scores">{{ localeStore.t('enterScores') }}</router-link>
+      <router-link to="/admin/events">{{ localeStore.t('events') }}</router-link>
     </template>
     <div class="nav-right">
-      <span class="username">{{ auth.username }}</span>
-      <router-link to="/change-password" class="small-link">Change password</router-link>
-      <button class="btn-logout" @click="logout">Log out</button>
+      <label class="locale-picker">
+        <span>{{ localeStore.t('language') }}</span>
+        <select v-model="localeStore.locale">
+          <option value="sv">{{ localeStore.t('swedish') }}</option>
+          <option value="en">{{ localeStore.t('english') }}</option>
+        </select>
+      </label>
+      <template v-if="auth.isLoggedIn">
+        <span class="username">{{ auth.name }}</span>
+        <router-link to="/change-password" class="small-link">{{ localeStore.t('changePassword') }}</router-link>
+        <button class="btn-logout" @click="logout">{{ localeStore.t('logout') }}</button>
+      </template>
     </div>
   </nav>
 
@@ -24,8 +36,10 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth.js'
+import { useLocaleStore } from './stores/locale.js'
 
 const auth = useAuthStore()
+const localeStore = useLocaleStore()
 const router = useRouter()
 
 auth.init()

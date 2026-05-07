@@ -4,6 +4,36 @@ const { requireAuth } = require('../middleware/auth')
 
 // ── Core computation ──────────────────────────────────────────────────────────
 
+function addPlacementLabels(rows, scoreKey) {
+  let lastScore = null
+  let currentPlace = 0
+  let tieCount = 0
+
+  return rows.map((row, index) => {
+    const score = row[scoreKey]
+    if (score === null) {
+      return { ...row, place: null }
+    }
+
+    if (lastScore === null || score !== lastScore) {
+      currentPlace = index + 1
+      tieCount = 1
+    } else {
+      tieCount += 1
+    }
+
+    lastScore = score
+
+    const nextScore = index + 1 < rows.length ? rows[index + 1][scoreKey] : null
+    const isTied = tieCount > 1 || nextScore === score
+
+    return {
+      ...row,
+      place: `${isTied ? 'T' : ''}${currentPlace}`,
+    }
+  })
+}
+
 function computeStandings(season) {
   const members = db.prepare(
     'SELECT id, name FROM members WHERE active = 1 ORDER BY name COLLATE NOCASE'
@@ -74,7 +104,11 @@ function computeStandings(season) {
     return a.total - b.total
   })
 
-  return { season: parseInt(season), rounds, standings }
+  return {
+    season: parseInt(season),
+    rounds,
+    standings: addPlacementLabels(standings, 'total'),
+  }
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────

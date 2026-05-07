@@ -1,7 +1,7 @@
 {
-  "name": "golf-tour-backend",
+  "name": "vpga-backend",
   "version": "1.0.0",
-  "description": "Golf tour backend API",
+  "description": "VPGA backend API",
   "type": "commonjs",
   "scripts": {
     "start": "node src/index.js",

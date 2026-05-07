@@ -26,6 +26,17 @@ nav .sep { color: rgba(255,255,255,0.3); }
 nav .nav-right { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
 nav .username { font-size: 0.85rem; opacity: 0.7; }
 nav .small-link { font-size: 0.82rem; opacity: 0.75; }
+nav .locale-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255,255,255,0.85);
+  font-size: 0.85rem;
+}
+nav .locale-picker select {
+  min-width: 110px;
+  padding: 0.25rem 0.5rem;
+}
 nav .btn-logout {
   background: rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.35);
@@ -36,6 +47,19 @@ nav .btn-logout {
   font-size: 0.88rem;
 }
 nav .btn-logout:hover { background: rgba(255,255,255,0.22); }
+
+.cal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #2d6a4f;
+  font-size: 0.9rem;
+  text-decoration: none;
+  border: 1px solid #2d6a4f;
+  padding: 0.3rem 0.75rem;
+  border-radius: 4px;
+}
+.cal-link:hover { background: #e8f5e9; }
 
 /* ── Main content ── */
 main {
