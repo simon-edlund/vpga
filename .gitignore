@@ -1,4 +1,4 @@
-node_modules/
+backend/data/vpga.dbnode_modules/
 dist/
 data/*.db
 *.db-shm

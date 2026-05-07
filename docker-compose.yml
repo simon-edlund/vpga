@@ -14,7 +14,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET env var must be set}
       NODE_ENV: production
       PORT: 3001
-      DB_PATH: /data/golf.db
+      DB_PATH: /data/vpga.db
 
 volumes:
   vpga-data:
