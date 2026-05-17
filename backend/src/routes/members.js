@@ -59,6 +59,23 @@ router.put('/:id', requireAdmin, (req, res) => {
   }
 })
 
+// Reset a member login so first-login setup must be completed again
+router.post('/:id/reset-login', requireAdmin, (req, res) => {
+  const result = db.prepare(
+    'UPDATE members SET password_hash = NULL, email_verified = 0 WHERE id = ?'
+  ).run(req.params.id)
+
+  if (!result.changes) {
+    return res.status(404).json({ error: 'Not found' })
+  }
+
+  const member = db.prepare(
+    'SELECT id, name, golf_id, handicap, email, active, is_admin, email_verified FROM members WHERE id = ?'
+  ).get(req.params.id)
+
+  res.json(member)
+})
+
 // Delete a member
 router.delete('/:id', requireAdmin, (req, res) => {
   db.prepare('DELETE FROM members WHERE id = ?').run(req.params.id)

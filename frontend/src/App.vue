@@ -5,13 +5,13 @@
       <router-link to="/">{{ localeStore.t('standings') }}</router-link>
       <router-link to="/rounds">{{ localeStore.t('rounds') }}</router-link>
       <router-link to="/ompc">{{ localeStore.t('ompc') }}</router-link>
+      <router-link to="/calendar">{{ localeStore.t('calendar') }}</router-link>
     </template>
     <template v-if="auth.isLoggedIn && auth.isAdmin">
       <span class="sep">|</span>
       <router-link to="/admin/members">{{ localeStore.t('members') }}</router-link>
       <router-link to="/admin/rounds">{{ localeStore.t('rounds') }}</router-link>
       <router-link to="/admin/scores">{{ localeStore.t('enterScores') }}</router-link>
-      <router-link to="/admin/events">{{ localeStore.t('events') }}</router-link>
       <router-link to="/admin/ompc">{{ localeStore.t('ompc') }}</router-link>
     </template>
     <div class="nav-right">

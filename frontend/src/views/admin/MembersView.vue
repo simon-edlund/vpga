@@ -80,6 +80,7 @@
             </template>
             <template v-else>
               <button class="sm" @click="startEdit(m)">{{ localeStore.t('edit') }}</button>
+              <button class="sm secondary" @click="resetLogin(m)">{{ localeStore.t('resetLogin') }}</button>
               <button class="sm danger" @click="deleteMember(m)">{{ localeStore.t('delete') }}</button>
             </template>
           </td>
@@ -144,6 +145,12 @@ async function saveMember(m) {
 async function deleteMember(m) {
   if (!confirm(localeStore.t('deleteMemberConfirm', { name: m.name }))) return
   await api.delete(`/api/members/${m.id}`)
+  load()
+}
+
+async function resetLogin(m) {
+  if (!confirm(localeStore.t('resetLoginConfirm', { name: m.name }))) return
+  await api.post(`/api/members/${m.id}/reset-login`)
   load()
 }
 

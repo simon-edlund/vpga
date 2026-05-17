@@ -4,11 +4,30 @@ const bcrypt = require('bcryptjs')
 const path = require('path')
 const fs = require('fs')
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../../data/golf.db')
+const backendRoot = path.resolve(__dirname, '..')
+const configuredDbPath = process.env.DB_PATH || './data/vpga.db'
+const DB_PATH = path.isAbsolute(configuredDbPath)
+  ? configuredDbPath
+  : path.resolve(backendRoot, configuredDbPath)
 
 // Ensure data directory exists
 const dir = path.dirname(DB_PATH)
 if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+
+const dbFiles = fs.readdirSync(dir)
+  .filter(name => name.endsWith('.db'))
+  .sort()
+
+if (dbFiles.length > 1) {
+  const activeDbFile = path.basename(DB_PATH)
+  const extraDbFiles = dbFiles.filter(name => name !== activeDbFile)
+  if (extraDbFiles.length > 0) {
+    console.warn(
+      `[${new Date().toISOString()}] Multiple SQLite database files found in ${dir}. ` +
+      `Using ${activeDbFile}. Also found: ${extraDbFiles.join(', ')}`
+    )
+  }
+}
 
 const db = new Database(DB_PATH)
 db.pragma('journal_mode = WAL')
@@ -251,5 +270,7 @@ if (!simon) {
 } else {
   db.prepare('UPDATE members SET is_admin = 1, active = 1 WHERE email = ?').run('simon@edlund.nl')
 }
+
+db.__dbPath = DB_PATH
 
 module.exports = db

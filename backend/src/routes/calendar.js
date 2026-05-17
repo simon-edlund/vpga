@@ -94,17 +94,44 @@ function buildIcs(items) {
   return lines.join('\r\n') + '\r\n'
 }
 
-// ── Public route (no auth) ────────────────────────────────────────────────────
 
-router.get('/vpga.ics', (req, res) => {
+// ── Language-specific iCal endpoints ──
+function getOmpcRoundName(round, lang = 'sv', roundNameMap = {}) {
+  const names = {
+    sv: {
+      32: '16-delsfinal',
+      16: 'Åttondelsfinal',
+      8:  'Kvartsfinal',
+      4:  'Semifinal',
+      2:  'Final',
+    },
+    en: {
+      32: 'Round of 32',
+      16: 'Round of 16',
+      8:  'Quarterfinals',
+      4:  'Semifinals',
+      2:  'Final',
+    }
+  }
+  const size = [32, 16, 8, 4, 2].find(s => roundNameMap[round] === s)
+  if (size) return names[lang][size]
+  return lang === 'sv' ? `Omgång ${round}` : `Round ${round}`
+}
+
+router.get('/:lang(vpga.ics|sv/vpga.ics|en/vpga.ics)', (req, res) => {
+  // Determine language
+  let lang = 'sv'
+  if (req.params.lang === 'en/vpga.ics') lang = 'en'
+  // ("vpga.ics" and "sv/vpga.ics" both default to sv)
+
   const rounds = db.prepare(
     'SELECT * FROM rounds ORDER BY season, round_number'
   ).all()
-
-  // Map rounds to the same shape buildIcs expects, add a generated title
   const roundItems = rounds.map(r => ({
     ...r,
-    title: `VPGA${r.round_number}${r.course ? ' – ' + r.course : ''}`,
+    title: lang === 'sv'
+      ? `VPGA Runda ${r.round_number}${r.course ? ' – ' + r.course : ''}`
+      : `VPGA Round ${r.round_number}${r.course ? ' – ' + r.course : ''}`,
     uid:   `vpga-round-${r.id}@vpga`,
   }))
 
@@ -116,10 +143,113 @@ router.get('/vpga.ics', (req, res) => {
     uid: `vpga-event-${e.id}@vpga`,
   }))
 
-  const ics = buildIcs([...roundItems, ...eventItems])
+  // OMPC deadlines per round (not per match)
+  const ompcDeadlinesRaw = db.prepare(
+    "SELECT round, MIN(deadline_date) as deadline_date FROM ompc_matches WHERE deadline_date IS NOT NULL AND deadline_date != '' GROUP BY round"
+  ).all()
+  // Map round numbers to bracket size (for naming)
+  const ompcRounds = db.prepare('SELECT DISTINCT round FROM ompc_matches ORDER BY round').all().map(r => r.round)
+  const roundNameMap = {}
+  if (ompcRounds.length) {
+    let size = 2 ** ompcRounds.length
+    for (let i = 0; i < ompcRounds.length; ++i) {
+      roundNameMap[ompcRounds[i]] = size
+      size = size / 2
+    }
+  }
+  const ompcDeadlines = ompcDeadlinesRaw.map(r => ({
+    uid: 'vpga-ompc-round-' + r.round + '@vpga',
+    title: getOmpcRoundName(r.round, lang, roundNameMap),
+    date: r.deadline_date,
+    date_end: '',
+    start_time: '',
+    notes: '',
+  }))
+
+  const ics = buildIcs([...roundItems, ...eventItems, ...ompcDeadlines])
   res.set('Content-Type', 'text/calendar; charset=utf-8')
-  res.set('Content-Disposition', 'attachment; filename="vpga.ics"')
+  res.set('Content-Disposition', `attachment; filename=vpga.ics`)
   res.send(ics)
+})
+
+// Aggregate all events for calendar view (manual, rounds, OMPC deadlines)
+router.get('/all', (req, res) => {
+  try {
+    const manualEvents = db.prepare(
+      'SELECT id, title, date, date_end, start_time, notes FROM events ORDER BY date, id'
+    ).all().map(e => ({ id: String(e.id), title: e.title, date: e.date, date_end: e.date_end || '', start_time: e.start_time || '', notes: e.notes || '', type: 'manual' }))
+
+    const rounds = db.prepare(
+      'SELECT id, season, round_number, date, date_end, start_time, course, notes FROM rounds ORDER BY season, round_number'
+    ).all().map(r => ({
+      id: 'round-' + r.id,
+      title: 'VPGA Runda ' + r.round_number + (r.course ? ' - ' + r.course : ''),
+      date: r.date,
+      date_end: r.date_end || '',
+      start_time: r.start_time || '',
+      notes: r.notes || '',
+      type: 'round',
+    }))
+
+    // OMPC deadlines per round (not per match)
+    const ompcDeadlinesRaw = db.prepare(
+      "SELECT round, MIN(deadline_date) as deadline_date FROM ompc_matches WHERE deadline_date IS NOT NULL AND deadline_date != '' GROUP BY round"
+    ).all()
+
+    // Swedish/English round names
+    function getOmpcRoundName(round, lang = 'sv') {
+      // Map round numbers to names (for 32, 16, 8, 4, 2)
+      const names = {
+        sv: {
+          32: '16-delsfinal',
+          16: 'Åttondelsfinal',
+          8:  'Kvartsfinal',
+          4:  'Semifinal',
+          2:  'Final',
+        },
+        en: {
+          32: 'Round of 32',
+          16: 'Round of 16',
+          8:  'Quarterfinals',
+          4:  'Semifinals',
+          2:  'Final',
+        }
+      }
+      // Guess size from round number
+      const size = [32, 16, 8, 4, 2].find(s => roundNameMap[round] === s)
+      if (size) return names[lang][size]
+      return lang === 'sv' ? `Omgång ${round}` : `Round ${round}`
+    }
+
+    // Map round numbers to bracket size (for naming)
+    // This assumes round 1 = 16-delsfinal (32), round 2 = åttondel (16), etc.
+    // We'll infer the mapping from the number of rounds present
+    const ompcRounds = db.prepare('SELECT DISTINCT round FROM ompc_matches ORDER BY round').all().map(r => r.round)
+    const roundNameMap = {}
+    if (ompcRounds.length) {
+      let size = 2 ** ompcRounds.length
+      for (let i = 0; i < ompcRounds.length; ++i) {
+        roundNameMap[ompcRounds[i]] = size
+        size = size / 2
+      }
+    }
+
+    const ompcDeadlines = ompcDeadlinesRaw.map(r => ({
+      id: 'ompc-round-' + r.round,
+      title: getOmpcRoundName(r.round, 'sv'),
+      date: r.deadline_date,
+      date_end: '',
+      start_time: '',
+      notes: '',
+      type: 'ompc_deadline',
+    }))
+
+    const all = [...manualEvents, ...rounds, ...ompcDeadlines].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0)
+    res.json(all)
+  } catch (err) {
+    console.error('/api/calendar/all error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
 })
 
 module.exports = router

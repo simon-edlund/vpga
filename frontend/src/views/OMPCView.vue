@@ -2,30 +2,30 @@
   <div class="ompc-view">
     <div class="page-head">
       <div>
-        <h1>OMPC</h1>
-        <p class="subtle">Follow the season cup bracket and report the winner of your own match.</p>
+        <h1>{{ localeStore.t('ompcPlayerTitle') }}</h1>
+        <p class="subtle">{{ localeStore.t('ompcPlayerIntro') }}</p>
       </div>
       <label class="season-picker">
-        Season
+        {{ localeStore.t('season') }}
         <input v-model.number="season" type="number" min="2020" />
       </label>
-      <button @click="fetchCup">Load season</button>
+      <button @click="fetchCup">{{ localeStore.t('loadSeason') }}</button>
     </div>
 
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-    <p v-if="loading" class="loading">Loading...</p>
+    <p v-if="loading" class="loading">{{ localeStore.t('loading') }}</p>
 
     <template v-else>
       <div v-if="!cup" class="card empty-state">
-        <p>No OMPC cup exists for this season yet.</p>
+        <p>{{ localeStore.t('noOmpcCupForSeason') }}</p>
       </div>
 
       <template v-else>
         <section v-if="matches.length > 0" class="card section-card">
           <div class="section-head">
             <div>
-              <h2>Bracket</h2>
-              <p class="subtle">Only players in a match can report or reset its result.</p>
+              <h2>{{ localeStore.t('ompcBracket') }}</h2>
+              <p class="subtle">{{ localeStore.t('ompcBracketPlayerHelp') }}</p>
             </div>
           </div>
 
@@ -40,10 +40,10 @@
                 <div class="round-header">
                   <div class="round-header-top">
                     <h3>{{ round.label }}</h3>
-                    <p class="subtle">{{ round.matches.length }} match<span v-if="round.matches.length !== 1">es</span></p>
+                    <p class="subtle">{{ round.matches.length }} {{ round.matches.length === 1 ? localeStore.t('matchSingular') : localeStore.t('matchPlural') }}</p>
                   </div>
                   <div class="deadline-box readonly-deadline">
-                    <span class="deadline-label">Deadline</span>
+                    <span class="deadline-label">{{ localeStore.t('deadline') }}</span>
                     <span>{{ roundDeadline(round.roundNumber) }}</span>
                   </div>
                 </div>
@@ -54,21 +54,21 @@
                   <div class="match-meta">Match {{ match.match_number }}</div>
                   <div class="slot-readonly">{{ slotDisplay(match, 'player1') }}</div>
                   <div class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
-                  <div v-if="match.winner_id" class="winner-state">Winner: {{ memberName(match.winner_id) }}</div>
+                  <div v-if="match.winner_id" class="winner-state">{{ localeStore.t('winnerLabel', { name: memberName(match.winner_id) }) }}</div>
                   <div v-if="canManageResult(match)" class="result-actions">
                     <button
                       class="sm"
                       :disabled="reportingMatchId === match.id"
                       @click="reportResult(match, currentMemberId)"
                     >
-                      {{ reportingMatchId === match.id ? 'Saving...' : 'I won' }}
+                      {{ reportingMatchId === match.id ? localeStore.t('saving') : localeStore.t('iWon') }}
                     </button>
                     <button
                       class="sm secondary"
                       :disabled="reportingMatchId === match.id"
                       @click="reportResult(match, opponentId(match))"
                     >
-                      {{ opponentName(match) }} won
+                      {{ localeStore.t('playerWon', { name: opponentName(match) }) }}
                     </button>
                     <button
                       v-if="match.winner_id"
@@ -76,7 +76,7 @@
                       :disabled="reportingMatchId === match.id"
                       @click="resetResult(match)"
                     >
-                      Reset result
+                      {{ localeStore.t('resetResult') }}
                     </button>
                   </div>
                 </article>
@@ -93,8 +93,10 @@
 import { computed, onMounted, ref } from 'vue'
 import api, { getOMPCMatches, getOMPCup, updateOMPCMatchResult } from '../api/index.js'
 import { useAuthStore } from '../stores/auth.js'
+import { useLocaleStore } from '../stores/locale.js'
 
 const auth = useAuthStore()
+const localeStore = useLocaleStore()
 const season = ref(new Date().getFullYear())
 const cup = ref(null)
 const members = ref([])
@@ -173,10 +175,10 @@ function extractMemberId(token) {
 
 function roundLabel(roundNumber) {
   const stageSize = Math.max(2, bracketSize.value / 2 ** (roundNumber - 1))
-  if (stageSize === 2) return 'Final'
-  if (stageSize === 4) return 'Semifinals'
-  if (stageSize === 8) return 'Quarterfinals'
-  return `Round of ${stageSize}`
+  if (stageSize === 2) return localeStore.t('final')
+  if (stageSize === 4) return localeStore.t('semifinals')
+  if (stageSize === 8) return localeStore.t('quarterfinals')
+  return localeStore.t('roundOf', { size: stageSize })
 }
 
 function feederMatchNumber(matchNumber, slot) {
@@ -189,7 +191,7 @@ function slotDisplay(match, slot) {
     return memberName(slotValue)
   }
 
-  return `Winner of Match ${feederMatchNumber(match.match_number, slot)}`
+  return localeStore.t('winnerOfMatch', { match: feederMatchNumber(match.match_number, slot) })
 }
 
 function memberName(id) {
@@ -199,7 +201,7 @@ function memberName(id) {
 
 function roundDeadline(roundNumber) {
   const match = matches.value.find(item => item.round === roundNumber)
-  return match?.deadline_date || 'Not set'
+  return match?.deadline_date || localeStore.t('notSet')
 }
 
 function opponentId(match) {
@@ -238,9 +240,9 @@ async function fetchCup() {
     await fetchMatches()
   } catch (error) {
     if (error.response?.status === 404) {
-      errorMessage.value = 'No OMPC cup found for this season.'
+      errorMessage.value = localeStore.t('noOmpcCupForSeason')
     } else {
-      errorMessage.value = error.response?.data?.error || 'Could not load OMPC cup.'
+      errorMessage.value = error.response?.data?.error || localeStore.t('couldNotLoadOmpcCup')
     }
   } finally {
     loading.value = false
@@ -256,7 +258,7 @@ async function reportResult(match, winnerId) {
     await updateOMPCMatchResult(match.id, winnerId)
     await fetchMatches()
   } catch (error) {
-    errorMessage.value = error.response?.data?.error || 'Could not report match result.'
+    errorMessage.value = error.response?.data?.error || localeStore.t('couldNotUpdateMatchResult')
   } finally {
     reportingMatchId.value = null
   }
@@ -271,7 +273,7 @@ async function resetResult(match) {
     await updateOMPCMatchResult(match.id, null, 'pending')
     await fetchMatches()
   } catch (error) {
-    errorMessage.value = error.response?.data?.error || 'Could not reset match result.'
+    errorMessage.value = error.response?.data?.error || localeStore.t('couldNotResetMatchResult')
   } finally {
     reportingMatchId.value = null
   }
