@@ -33,7 +33,7 @@ app.use('/api/ompc',     require('./routes/ompc'))
 
 // Serve Vue SPA in production
 if (isProd) {
-	const distDir = path.join(__dirname, '../../frontend/dist')
+	const distDir = path.join(__dirname, '../public')
 	app.use(express.static(distDir))
 	app.get('*', (req, res) => {
 		res.sendFile(path.join(distDir, 'index.html'))
