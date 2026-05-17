@@ -21,12 +21,14 @@ app.use((req, res, next) => {
 app.use(cors(isProd ? {} : { origin: ['http://localhost:5173', 'http://localhost:4173'] }))
 app.use(express.json())
 
+
 app.use('/api/auth',     require('./routes/auth'))
 app.use('/api/members',  require('./routes/members'))
 app.use('/api/rounds',   require('./routes/rounds'))
 app.use('/api/standings',require('./routes/standings'))
 app.use('/api/events',   require('./routes/events'))
 app.use('/api/calendar', require('./routes/calendar'))
+app.use('/api/ompc',     require('./routes/ompc'))
 
 // Serve Vue SPA in production
 if (isProd) {
@@ -40,4 +42,7 @@ if (isProd) {
 app.listen(PORT, () => {
 	console.log(`[${new Date().toISOString()}] VPGA backend running on http://localhost:${PORT}`)
 	console.log(`[${new Date().toISOString()}] SQLite database: ${process.env.DB_PATH || './data/golf.db'}`)
+	app.listen(PORT, () => {
+		console.log(`Server is running on http://localhost:${PORT}`)
+	})
 })

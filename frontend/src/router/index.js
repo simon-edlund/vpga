@@ -13,6 +13,7 @@ const router = createRouter({
     { path: '/admin/rounds',    component: () => import('../views/admin/RoundsAdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/admin/scores',    component: () => import('../views/admin/ScoreEntryView.vue'),  meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/admin/events',    component: () => import('../views/admin/EventsAdminView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+    { path: '/admin/ompc',      component: () => import('../views/admin/OMPCAdminView.vue'),    meta: { requiresAuth: true, requiresAdmin: true } },
   ],
 })
 

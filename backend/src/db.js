@@ -44,6 +44,32 @@ db.exec(`
     net_strokes INTEGER NOT NULL,
     UNIQUE(round_id, member_id)
   );
+
+  CREATE TABLE IF NOT EXISTS ompc_cup (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    season     INTEGER NOT NULL UNIQUE,
+    created_by INTEGER NOT NULL REFERENCES members(id),
+    created_at TEXT    NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS ompc_participants (
+    cup_id    INTEGER NOT NULL REFERENCES ompc_cup(id) ON DELETE CASCADE,
+    member_id INTEGER NOT NULL REFERENCES members(id)  ON DELETE CASCADE,
+    PRIMARY KEY (cup_id, member_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS ompc_matches (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    cup_id         INTEGER NOT NULL REFERENCES ompc_cup(id) ON DELETE CASCADE,
+    round          INTEGER NOT NULL,
+    match_number   INTEGER NOT NULL DEFAULT 1,
+    player1_id     INTEGER REFERENCES members(id),
+    player2_id     INTEGER REFERENCES members(id),
+    winner_id      INTEGER REFERENCES members(id),
+    scheduled_date TEXT    NOT NULL DEFAULT '',
+    deadline_date  TEXT    NOT NULL DEFAULT '',
+    status         TEXT    NOT NULL DEFAULT 'pending'
+  );
 `)
 
 function addColumnIfMissing(table, column, definition) {
@@ -52,6 +78,139 @@ function addColumnIfMissing(table, column, definition) {
   if (!hasColumn) {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
   }
+}
+
+function recreateOmpcParticipantsIfNeeded() {
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'ompc_participants'").all()
+  if (tables.length === 0) {
+    return
+  }
+
+  const columns = db.prepare('PRAGMA table_info(ompc_participants)').all()
+  const columnNames = new Set(columns.map(column => column.name))
+
+  if (columnNames.has('cup_id')) {
+    return
+  }
+
+  db.exec('ALTER TABLE ompc_participants RENAME TO ompc_participants_old')
+
+  db.exec(`
+    CREATE TABLE ompc_participants (
+      cup_id    INTEGER NOT NULL REFERENCES ompc_cup(id) ON DELETE CASCADE,
+      member_id INTEGER NOT NULL REFERENCES members(id)  ON DELETE CASCADE,
+      PRIMARY KEY (cup_id, member_id)
+    )
+  `)
+
+  const oldRows = db.prepare('SELECT * FROM ompc_participants_old').all()
+  const oldColumns = new Set(db.prepare('PRAGMA table_info(ompc_participants_old)').all().map(column => column.name))
+  const defaultCreator = db.prepare('SELECT id FROM members WHERE is_admin = 1 ORDER BY id LIMIT 1').get()
+    || db.prepare('SELECT id FROM members ORDER BY id LIMIT 1').get()
+
+  const createCup = db.prepare('INSERT OR IGNORE INTO ompc_cup (season, created_by, created_at) VALUES (?, ?, ?)')
+  const getCupId = db.prepare('SELECT id FROM ompc_cup WHERE season = ?')
+  const insertParticipant = db.prepare('INSERT OR IGNORE INTO ompc_participants (cup_id, member_id) VALUES (?, ?)')
+
+  const migrateRows = db.transaction(rows => {
+    const now = new Date().toISOString()
+
+    for (const row of rows) {
+      const season = oldColumns.has('season') ? row.season : null
+      if (!season || !defaultCreator?.id) {
+        continue
+      }
+
+      createCup.run(season, defaultCreator.id, now)
+      const cup = getCupId.get(season)
+      if (!cup) {
+        continue
+      }
+
+      insertParticipant.run(cup.id, row.member_id)
+    }
+  })
+
+  migrateRows(oldRows)
+  db.exec('DROP TABLE ompc_participants_old')
+}
+
+function recreateOmpcMatchesIfNeeded() {
+  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'ompc_matches'").all()
+  if (tables.length === 0) {
+    return
+  }
+
+  const columns = db.prepare('PRAGMA table_info(ompc_matches)').all()
+  const columnNames = new Set(columns.map(column => column.name))
+  const player1 = columns.find(column => column.name === 'player1_id')
+  const player2 = columns.find(column => column.name === 'player2_id')
+  const needsMatchNumber = !columnNames.has('match_number')
+  const needsCupId = !columnNames.has('cup_id')
+  const needsWinnerId = !columnNames.has('winner_id')
+  const needsScheduledDate = !columnNames.has('scheduled_date')
+  const needsDeadlineDate = !columnNames.has('deadline_date')
+  const needsStatus = !columnNames.has('status')
+  const needsNullablePlayers = !!player1?.notnull || !!player2?.notnull
+
+  if (!player1 || !player2) {
+    return
+  }
+
+  if (!needsMatchNumber && !needsCupId && !needsWinnerId && !needsScheduledDate && !needsDeadlineDate && !needsStatus && !needsNullablePlayers) {
+    return
+  }
+
+  db.exec('ALTER TABLE ompc_matches RENAME TO ompc_matches_old')
+
+  db.exec(`
+    CREATE TABLE ompc_matches (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      cup_id         INTEGER NOT NULL REFERENCES ompc_cup(id) ON DELETE CASCADE,
+      round          INTEGER NOT NULL,
+      match_number   INTEGER NOT NULL DEFAULT 1,
+      player1_id     INTEGER REFERENCES members(id),
+      player2_id     INTEGER REFERENCES members(id),
+      winner_id      INTEGER REFERENCES members(id),
+      scheduled_date TEXT    NOT NULL DEFAULT '',
+      deadline_date  TEXT    NOT NULL DEFAULT '',
+      status         TEXT    NOT NULL DEFAULT 'pending'
+    )
+  `)
+
+  const oldColumns = new Set(db.prepare('PRAGMA table_info(ompc_matches_old)').all().map(column => column.name))
+  const oldRows = db.prepare('SELECT * FROM ompc_matches_old').all()
+  const onlyCup = db.prepare('SELECT id FROM ompc_cup ORDER BY id LIMIT 1').get()
+  const insertMatch = db.prepare(`
+    INSERT INTO ompc_matches (
+      id, cup_id, round, match_number, player1_id, player2_id, winner_id, scheduled_date, deadline_date, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+
+  const migrateRows = db.transaction(rows => {
+    for (const row of rows) {
+      const cupId = oldColumns.has('cup_id') ? row.cup_id : onlyCup?.id
+      if (!cupId) {
+        continue
+      }
+
+      insertMatch.run(
+        row.id,
+        cupId,
+        oldColumns.has('round') ? row.round : 1,
+        oldColumns.has('match_number') ? row.match_number : 1,
+        oldColumns.has('player1_id') ? row.player1_id : null,
+        oldColumns.has('player2_id') ? row.player2_id : null,
+        oldColumns.has('winner_id') ? row.winner_id : null,
+        oldColumns.has('scheduled_date') ? (row.scheduled_date || '') : '',
+        oldColumns.has('deadline_date') ? (row.deadline_date || '') : '',
+        oldColumns.has('status') ? (row.status || 'pending') : 'pending'
+      )
+    }
+  })
+
+  migrateRows(oldRows)
+  db.exec('DROP TABLE ompc_matches_old')
 }
 
 addColumnIfMissing('rounds', 'date_end',    "TEXT NOT NULL DEFAULT ''")
@@ -74,6 +233,10 @@ addColumnIfMissing('members', 'email', "TEXT NOT NULL DEFAULT ''")
 addColumnIfMissing('members', 'is_admin', 'INTEGER NOT NULL DEFAULT 0')
 addColumnIfMissing('members', 'password_hash', 'TEXT')
 addColumnIfMissing('members', 'email_verified', 'INTEGER NOT NULL DEFAULT 0')
+addColumnIfMissing('ompc_matches', 'match_number', 'INTEGER NOT NULL DEFAULT 1')
+
+recreateOmpcParticipantsIfNeeded()
+recreateOmpcMatchesIfNeeded()
 
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_members_email ON members(email)')
 

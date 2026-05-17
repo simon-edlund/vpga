@@ -4,6 +4,28 @@ const jwt = require('jsonwebtoken')
 const db = require('../db')
 const { requireAuth } = require('../middleware/auth')
 
+function issueMemberToken(member) {
+  return jwt.sign(
+    { id: member.id, email: member.email, name: member.name, is_admin: !!member.is_admin },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  )
+}
+
+router.post('/dev-login', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' })
+  }
+
+  const member = db.prepare('SELECT * FROM members WHERE email = ? AND active = 1').get('simon@edlund.nl')
+  if (!member) {
+    return res.status(404).json({ error: 'Development user not found' })
+  }
+
+  const token = issueMemberToken(member)
+  res.json({ token, is_admin: !!member.is_admin, name: member.name, email: member.email })
+})
+
 router.post('/login', (req, res) => {
   const { email, password } = req.body
   const member = db.prepare('SELECT * FROM members WHERE email = ? AND active = 1').get((email || '').trim().toLowerCase())
@@ -29,11 +51,7 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' })
   }
 
-  const token = jwt.sign(
-    { id: member.id, email: member.email, name: member.name, is_admin: !!member.is_admin },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  )
+  const token = issueMemberToken(member)
   res.json({ token, is_admin: !!member.is_admin, name: member.name, email: member.email })
 })
 
@@ -68,11 +86,7 @@ router.post('/complete-first-login', (req, res) => {
     'UPDATE members SET password_hash = ?, email_verified = 1 WHERE id = ?'
   ).run(passwordHash, member.id)
 
-  const token = jwt.sign(
-    { id: member.id, email: member.email, name: member.name, is_admin: !!member.is_admin },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  )
+  const token = issueMemberToken(member)
   res.json({ token, is_admin: !!member.is_admin, name: member.name, email: member.email })
 })
 

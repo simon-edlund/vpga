@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const name = ref(localStorage.getItem('name'))
   const email = ref(localStorage.getItem('email'))
   const isAdmin = ref(localStorage.getItem('is_admin') === 'true')
+  let devLoginPromise = null
 
   const isLoggedIn = computed(() => !!token.value)
 
@@ -22,10 +23,26 @@ export const useAuthStore = defineStore('auth', () => {
     api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
   }
 
-  function init() {
+  async function init() {
     if (token.value) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+      return
     }
+
+    if (import.meta.env.DEV && !devLoginPromise) {
+      devLoginPromise = api.post('/api/auth/dev-login')
+        .then(res => {
+          if (res.data.token) {
+            applyLoginResponse(res.data)
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          devLoginPromise = null
+        })
+    }
+
+    await devLoginPromise
   }
 
   async function login(userEmail, password) {

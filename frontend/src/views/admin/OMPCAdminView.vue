@@ -1,0 +1,707 @@
+<template>
+  <div class="ompc-admin-view">
+    <div class="page-head">
+      <div>
+        <h1>OMPC Admin</h1>
+        <p class="subtle">Create the season cup, add players, then place them into bracket slots with dropdown selectors.</p>
+      </div>
+      <label class="season-picker">
+        Season
+        <input v-model.number="season" type="number" min="2020" />
+      </label>
+      <button @click="fetchCup">Load season</button>
+    </div>
+
+    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+    <p v-if="loading" class="loading">Loading...</p>
+
+    <template v-else>
+      <div v-if="!cup" class="card empty-state">
+        <p>No OMPC cup exists for this season yet.</p>
+        <button @click="createCup">Create OMPC cup</button>
+      </div>
+
+      <template v-else>
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Participants</h2>
+              <p class="subtle">Add members to the cup. Then assign them to bracket slots from the dropdowns below.</p>
+            </div>
+          </div>
+
+          <div class="participant-controls">
+            <select v-model="selectedMember" :disabled="addingParticipant">
+              <option :value="null">Select member</option>
+              <option v-for="member in selectableMembers" :key="member.id" :value="member.id">{{ member.name }}</option>
+            </select>
+            <button @click="addParticipant" :disabled="!selectedMember || addingParticipant">Add participant</button>
+          </div>
+          <div class="participant-pool">
+            <div class="pool-column">
+              <h3>In Cup</h3>
+              <div class="participant-status-list">
+                <div v-for="participant in cupParticipants" :key="participant.id" class="participant-status-row">
+                  <span class="participant-pill">{{ participant.name }}</span>
+                  <span :class="['assignment-badge', participantAssignmentStatus(participant.id).kind]">
+                    {{ participantAssignmentStatus(participant.id).label }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-actions">
+            <button @click="generateBracket" :disabled="cup.participants.length < 2">Generate bracket tree</button>
+            <button class="secondary" @click="resetSeason" :disabled="resettingSeason">
+              {{ resettingSeason ? 'Resetting...' : 'Reset OMPC season' }}
+            </button>
+          </div>
+        </section>
+
+        <section v-if="matches.length > 0" class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Bracket</h2>
+              <p class="subtle">Each column is one OMPC stage. Use the slot selectors to place players in each match.</p>
+            </div>
+          </div>
+
+          <div class="bracket-scroll">
+            <div class="bracket-grid" :style="bracketGridStyle">
+              <!-- Header row -->
+              <div v-for="(round, colIdx) in bracketRounds" :key="'header-' + round.roundNumber" class="bracket-header-cell" :style="{ gridColumn: colIdx + 1, gridRow: 1 }">
+                <div class="round-header">
+                  <div class="round-header-top">
+                    <h3>{{ round.label }}</h3>
+                    <p class="subtle">{{ round.matches.length }} match<span v-if="round.matches.length !== 1">es</span></p>
+                  </div>
+                  <div class="deadline-box">
+                    <label>
+                      Deadline
+                      <input v-model="deadlineDrafts[round.roundNumber]" type="date" />
+                    </label>
+                    <button class="sm secondary" @click="saveRoundDeadline(round.roundNumber)">Save</button>
+                  </div>
+                </div>
+              </div>
+              <!-- Matches -->
+              <template v-for="(match, idx) in bracketGridMatches" :key="'match-' + match.id">
+                <article class="match-card"
+                  :style="{ gridColumn: match.gridColumn, gridRow: `${match.gridRow} / span 2` }">
+                  <div class="match-meta">Match {{ match.match_number }}</div>
+                  <label class="slot-editor">
+                    <select
+                      v-if="isEditableSlot(match, 'player1')"
+                      :value="match.player1_id ?? ''"
+                      @change="changeSlot(match, 'player1', $event.target.value)"
+                    >
+                      <option value="">Select player</option>
+                      <option v-for="participant in slotOptions(match, 'player1')" :key="participant.id" :value="participant.id">{{ participant.name }}</option>
+                    </select>
+                    <div v-else class="slot-readonly">{{ slotDisplay(match, 'player1') }}</div>
+                  </label>
+                  <label class="slot-editor">
+                    <select
+                      v-if="isEditableSlot(match, 'player2')"
+                      :value="match.player2_id ?? ''"
+                      @change="changeSlot(match, 'player2', $event.target.value)"
+                    >
+                      <option value="">Select player</option>
+                      <option v-for="participant in slotOptions(match, 'player2')" :key="participant.id" :value="participant.id">{{ participant.name }}</option>
+                    </select>
+                    <div v-else class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
+                  </label>
+                </article>
+              </template>
+            </div>
+          </div>
+        </section>
+      </template>
+    </template>
+  </div>
+</template>
+
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import api, {
+  addOMPCParticipants,
+  createOMPCup,
+  deleteOMPCup,
+  generateOMPCBracket,
+  getOMPCMatches,
+  getOMPCup,
+  updateOMPCMatchSlot,
+  updateOMPCRoundDeadline,
+} from '../../api/index.js'
+import { useAuthStore } from '../../stores/auth.js'
+
+const auth = useAuthStore()
+const season = ref(new Date().getFullYear())
+const cup = ref(null)
+const members = ref([])
+const selectedMember = ref(null)
+const addingParticipant = ref(false)
+const resettingSeason = ref(false)
+const matches = ref([])
+const loading = ref(true)
+const errorMessage = ref('')
+const deadlineDrafts = ref({})
+const MATCH_CARD_HEIGHT = 92
+const GRID_TRACK_HEIGHT = 44
+const GRID_ROW_GAP = 8
+
+const cupParticipants = computed(() => {
+  if (!cup.value) return []
+  return cup.value.participants
+    .map(id => members.value.find(member => member.id === id))
+    .filter(Boolean)
+})
+
+const initialRoundAssignments = computed(() => {
+  const assignments = new Map()
+
+  for (const match of matches.value.filter(match => match.round === 1)) {
+    if (match.player1_id) {
+      assignments.set(match.player1_id, { matchId: match.id, slot: 'player1' })
+    }
+    if (match.player2_id) {
+      assignments.set(match.player2_id, { matchId: match.id, slot: 'player2' })
+    }
+  }
+
+  return assignments
+})
+
+const selectableMembers = computed(() => {
+  const existing = new Set(cup.value?.participants || [])
+  return members.value.filter(member => !existing.has(member.id) && member.active)
+})
+
+const bracketRounds = computed(() => {
+  const grouped = new Map()
+  for (const match of matches.value) {
+    if (!grouped.has(match.round)) grouped.set(match.round, [])
+    grouped.get(match.round).push(match)
+  }
+
+  const totalRounds = grouped.size
+
+  return [...grouped.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([roundNumber, roundMatches]) => ({
+      roundNumber,
+      label: roundLabel(roundNumber, totalRounds, roundMatches.length),
+      matches: roundMatches.sort((a, b) => a.match_number - b.match_number),
+    }))
+})
+
+const bracketGridMatches = computed(() => {
+  if (!matches.value.length) return []
+  const result = []
+  for (const match of matches.value) {
+    const col = match.round
+    const matchesInRound = matches.value.filter(m => m.round === match.round)
+    const roundIdx = matchesInRound.findIndex(m => m.id === match.id)
+    const roundOffset = 2 ** (match.round - 1)
+    const rowStep = 2 ** match.round
+    const row = 1 + roundOffset + roundIdx * rowStep
+    result.push({ ...match, gridColumn: col, gridRow: row })
+  }
+  return result
+})
+
+const bracketGridStyle = computed(() => {
+  const rounds = bracketRounds.value.length
+  const totalTracks = 2 ** rounds
+  return {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${rounds}, 300px)`,
+    gridTemplateRows: `minmax(132px, auto) repeat(${totalTracks}, ${GRID_TRACK_HEIGHT}px)`,
+    gap: `${GRID_ROW_GAP}px 2.5rem`,
+    minWidth: 'max-content',
+    alignItems: 'center',
+  }
+})
+
+const bracketSize = computed(() => {
+  // Calculate the total number of participants or matches in the bracket
+  if (!matches.value.length) return 0
+  const totalRounds = Math.max(...matches.value.map(m => m.round))
+  return 2 ** totalRounds // Assuming a full bracket with 2^n participants
+})
+
+function roundLabel(roundNumber, totalRounds, matchCount) {
+  const stageSize = Math.max(2, bracketSize.value / 2 ** (roundNumber - 1))
+  if (stageSize === 2) return 'Final'
+  if (stageSize === 4) return 'Semifinals'
+  if (stageSize === 8) return 'Quarterfinals'
+  return `Round of ${stageSize}`
+}
+
+function feederMatchNumber(matchNumber, slot) {
+  return slot === 'player1' ? matchNumber * 2 - 1 : matchNumber * 2
+}
+
+function isEditableSlot(match, slot) {
+  if (match.round === 1) {
+    return true
+  }
+
+  const previousRoundMatches = matchesByRound.value.get(match.round - 1) || []
+  const expectedMatchNumber = feederMatchNumber(match.match_number, slot)
+  return !previousRoundMatches.some(previousMatch => previousMatch.match_number === expectedMatchNumber)
+}
+
+function slotDisplay(match, slot) {
+  const slotValue = slot === 'player1' ? match.player1_id : match.player2_id
+  if (slotValue) {
+    return memberName(slotValue)
+  }
+
+  const sourceMatchNumber = feederMatchNumber(match.match_number, slot)
+  return `Winner of Match ${sourceMatchNumber}`
+}
+
+function memberName(id) {
+  if (!id) return ''
+  return members.value.find(member => member.id === id)?.name || `Member ${id}`
+}
+
+function hydrateDrafts() {
+  const nextDeadlines = {}
+
+  for (const match of matches.value) {
+    if (!(match.round in nextDeadlines)) {
+      nextDeadlines[match.round] = match.deadline_date || ''
+    }
+  }
+
+  deadlineDrafts.value = nextDeadlines
+}
+
+function slotOptions(match, slot) {
+  const currentValue = slot === 'player1' ? match.player1_id : match.player2_id
+  return cupParticipants.value.filter(participant => {
+    if (participant.id === currentValue) {
+      return true
+    }
+
+    if (isAssignedElsewhere(participant.id, match.id)) {
+      return false
+    }
+
+    const initialAssignment = initialRoundAssignments.value.get(participant.id)
+    if (!initialAssignment) {
+      return true
+    }
+
+    return initialAssignment.matchId === match.id && initialAssignment.slot === slot
+  })
+}
+
+function isAssignedElsewhere(memberId, matchId) {
+  return matches.value.some(match => match.id !== matchId && (match.player1_id === memberId || match.player2_id === memberId))
+}
+
+function participantAssignmentStatus(memberId) {
+  const assignment = initialRoundAssignments.value.get(memberId)
+  if (!assignment) {
+    return { kind: 'unassigned', label: 'Unassigned' }
+  }
+
+  const slotLabel = assignment.slot === 'player1' ? 'P1' : 'P2'
+  return {
+    kind: 'assigned',
+    label: `Assigned to Match ${matchNumberById(assignment.matchId)} ${slotLabel}`,
+  }
+}
+
+function matchNumberById(matchId) {
+  return matches.value.find(match => match.id === matchId)?.match_number || '?'
+}
+
+async function fetchMembers() {
+  const res = await api.get('/api/members')
+  members.value = res.data
+}
+
+async function fetchMatches() {
+  if (!cup.value) return
+  matches.value = await getOMPCMatches(cup.value.id)
+  hydrateDrafts()
+}
+
+async function fetchCup() {
+  loading.value = true
+  errorMessage.value = ''
+  cup.value = null
+  matches.value = []
+
+  try {
+    cup.value = await getOMPCup(season.value)
+    await fetchMatches()
+  } catch (error) {
+    if (error.response?.status === 404) {
+      errorMessage.value = 'No OMPC cup found for this season.'
+    } else {
+      errorMessage.value = error.response?.data?.error || 'Could not load OMPC cup.'
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+async function createCup() {
+  errorMessage.value = ''
+
+  try {
+    await createOMPCup({ season: season.value, created_by: auth.token ? 1 : 1 })
+    await fetchCup()
+  } catch (error) {
+    errorMessage.value = error.response?.data?.error || 'Could not create OMPC cup.'
+  }
+}
+
+async function resetSeason() {
+  if (!cup.value || resettingSeason.value) return
+
+  const confirmed = window.confirm(`Reset OMPC season ${season.value}? This removes the cup, participants, matches, and deadlines.`)
+  if (!confirmed) return
+
+  resettingSeason.value = true
+  errorMessage.value = ''
+
+  try {
+    await deleteOMPCup(season.value)
+    cup.value = null
+    matches.value = []
+    selectedMember.value = null
+    deadlineDrafts.value = {}
+  } catch (error) {
+    errorMessage.value = error.response?.data?.error || 'Could not reset OMPC season.'
+  } finally {
+    resettingSeason.value = false
+  }
+}
+
+async function addParticipant() {
+  if (!cup.value || !selectedMember.value) return
+  addingParticipant.value = true
+  errorMessage.value = ''
+
+  try {
+    await addOMPCParticipants(cup.value.id, [selectedMember.value])
+    selectedMember.value = null
+    await fetchCup()
+  } catch (error) {
+    errorMessage.value = error.response?.data?.error || 'Could not add participant.'
+  } finally {
+    addingParticipant.value = false
+  }
+}
+
+async function generateBracket() {
+  if (!cup.value) return
+  errorMessage.value = ''
+
+  try {
+    await generateOMPCBracket(cup.value.id, deadlineDrafts.value)
+    await fetchMatches()
+  } catch (error) {
+    errorMessage.value = error.response?.data?.error || 'Could not generate bracket.'
+  }
+}
+
+async function changeSlot(match, slot, memberId) {
+  errorMessage.value = ''
+
+  try {
+    await updateOMPCMatchSlot(match.id, slot, memberId ? Number(memberId) : null)
+    await fetchMatches()
+  } catch (error) {
+    errorMessage.value = error.response?.data?.error || 'Could not update bracket slot.'
+  }
+}
+
+async function saveRoundDeadline(roundNumber) {
+  if (!cup.value) return
+  errorMessage.value = ''
+
+  try {
+    await updateOMPCRoundDeadline(cup.value.id, roundNumber, deadlineDrafts.value[roundNumber] || '')
+    await fetchMatches()
+  } catch (error) {
+    errorMessage.value = error.response?.data?.error || 'Could not update round deadline.'
+  }
+}
+
+const matchesByRound = computed(() => {
+  const map = new Map();
+  for (const match of matches.value) {
+    if (!map.has(match.round)) {
+      map.set(match.round, []);
+    }
+    map.get(match.round).push(match);
+  }
+  return map;
+});
+
+onMounted(async () => {
+  console.log('Fetching members...')
+  await fetchMembers()
+  console.log('Members fetched. Fetching cup...')
+  await fetchCup()
+  console.log('Cup fetched.')
+})
+</script>
+
+<style scoped>
+.ompc-admin-view {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.page-head,
+.section-head,
+.participant-controls,
+.section-actions,
+.round-header,
+.match-footer,
+.participant-pool {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-head {
+  align-items: end;
+}
+
+.season-picker {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: #4b5563;
+}
+
+.subtle {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.section-card {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.empty-state {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+}
+
+.participant-pool {
+  align-items: start;
+}
+
+.pool-column {
+  flex: 1 1 280px;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.chip-wrap {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.participant-pill {
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.88rem;
+}
+
+.participant-pill {
+  background: #eef2ef;
+  color: #345445;
+}
+
+.participant-status-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.participant-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.assignment-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.assignment-badge.assigned {
+  background: #dceee4;
+  color: #1f5a3f;
+}
+
+.assignment-badge.unassigned {
+  background: #f2f4f7;
+  color: #667085;
+}
+
+.muted-wrap {
+  min-height: 2.5rem;
+}
+
+.bracket-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.bracket-header-row {
+  display: flex;
+  gap: 1.5rem;
+  min-width: max-content;
+  margin-bottom: 0.5rem;
+}
+.bracket-header-cell {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.bracket-grid {
+  display: flex;
+  gap: 1.5rem;
+  min-width: max-content;
+  align-items: center;
+}
+
+.round-column {
+  width: 280px;
+  display: grid;
+  gap: 1rem;
+  align-content: center;
+}
+
+.round-header {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  min-height: 100px;
+}
+
+.round-header-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  white-space: nowrap;
+}
+
+.round-header-top .subtle {
+  font-size: 0.82rem;
+}
+
+.deadline-box {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: stretch;
+}
+
+.deadline-box label,
+.slot-editor,
+.winner-picker {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.match-stack {
+  display: grid;
+  gap: var(--round-gap, 1rem);
+  justify-items: center;
+}
+
+.match-card {
+  position: relative;
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #d8e6dc;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf7 100%);
+  box-shadow: 0 8px 24px rgba(27, 67, 50, 0.07);
+}
+
+.match-card::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -1.5rem;
+  width: 1.5rem;
+  height: 1px;
+  background: #b9d0c1;
+}
+
+.round-column:last-child .match-card::after {
+  display: none;
+}
+
+.match-meta {
+  position: absolute;
+  top: -0.45rem;
+  left: 0.6rem;
+  padding: 0 0.35rem;
+  background: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.slot-editor select {
+  width: 100%;
+  min-height: 32px;
+  height: 32px;
+  padding: 0.25rem 0.55rem;
+  line-height: 1.1;
+}
+
+.slot-readonly {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  background: #f4f7f5;
+  border: 1px solid #dbe8df;
+  color: #4b5563;
+}
+
+@media (max-width: 900px) {
+  .round-column {
+    width: 250px;
+  }
+
+  .round-header-top {
+    display: grid;
+    white-space: normal;
+  }
+}
+</style>
