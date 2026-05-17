@@ -11,6 +11,11 @@ RUN cd frontend && npm run build
 # Stage 2: Build backend and include frontend build
 FROM node:18
 WORKDIR /app
+
+# Accept VITE_VERSION as build arg and set as env
+ARG VITE_VERSION=unknown
+ENV VITE_VERSION=$VITE_VERSION
+
 COPY backend/package.json backend/package-lock.json ./backend/
 RUN cd backend && npm install
 COPY backend ./backend

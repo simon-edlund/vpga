@@ -33,6 +33,10 @@
   <main>
     <router-view />
   </main>
+
+  <footer class="app-footer">
+    <span>Version: {{ version }}</span>
+  </footer>
 </template>
 
 <script setup>
@@ -44,6 +48,8 @@ const auth = useAuthStore()
 const localeStore = useLocaleStore()
 const router = useRouter()
 
+const version = import.meta.env.VITE_VERSION || 'unknown'
+
 auth.init()
 
 function logout() {
@@ -51,3 +57,12 @@ function logout() {
   router.push('/login')
 }
 </script>
+
+<style>
+.app-footer {
+  text-align: center;
+  color: #888;
+  font-size: 0.9em;
+  margin: 2em 0 1em 0;
+}
+</style>
