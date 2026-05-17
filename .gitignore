@@ -3,7 +3,6 @@ frontend/node_modules/
 /node_modules/
 frontend/dist/
 backend/data/*.db*
-backend/data/*.db
 backend/data/*.db-shm
 backend/data/*.db-wal
 backend/*.db
@@ -16,3 +15,5 @@ data/*.db
 *.db-shm
 *.db-wal
 .DS_Store
+# Ignore production environment file
+production.env

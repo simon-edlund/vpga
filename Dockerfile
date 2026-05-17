@@ -1,33 +1,21 @@
-# ── Stage 1: build Vue frontend ───────────────────────────────────────────────
-FROM node:20-alpine AS frontend-build
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
+# Multi-stage Dockerfile for combining frontend and backend
 
-# ── Stage 2: production image ─────────────────────────────────────────────────
-FROM node:20-alpine AS production
+# Stage 1: Build frontend
+FROM node:18 AS build-frontend
 WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+RUN cd frontend && npm install
+COPY frontend ./frontend
+RUN cd frontend && npm run build
 
-# Install backend dependencies (native modules need python/make on alpine)
-RUN apk add --no-cache python3 make g++
+# Stage 2: Build backend and include frontend build
+FROM node:18
+WORKDIR /app
+COPY backend/package.json backend/package-lock.json ./backend/
+RUN cd backend && npm install
+COPY backend ./backend
+COPY --from=build-frontend /app/frontend/dist ./backend/public
 
-COPY backend/package*.json ./backend/
-RUN cd backend && npm ci --omit=dev
-
-COPY backend/ ./backend/
-
-# Copy built frontend into place (backend serves it via express.static)
-COPY --from=frontend-build /app/frontend/dist ./frontend/dist
-
-# Persistent data directory (mount a volume here)
-RUN mkdir -p /data
-
-EXPOSE 3001
-
-ENV NODE_ENV=production
-ENV PORT=3001
-ENV DB_PATH=/data/golf.db
-
-CMD ["node", "backend/src/index.js"]
+# Start backend (serving frontend as static files)
+WORKDIR /app/backend
+CMD ["node", "src/index.js"]

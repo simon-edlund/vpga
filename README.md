@@ -223,3 +223,53 @@ An admin can:
 
 - The backend must be restarted after schema or auth changes.
 - The SQLite database file is ignored by git.
+
+# Build and run the application without Docker Compose
+
+## Build the Docker image
+
+```bash
+docker build -t vpga-app .
+```
+
+## Run the container
+
+```bash
+docker run -p 3000:3000 \
+  -v $(pwd)/data:/app/backend/data \
+  -e NODE_ENV=production \
+  -e JWT_SECRET=your_jwt_secret_here \
+  vpga-app
+```
+
+# Build and Push the Docker Image to TrueNAS
+
+## Build the Docker Image
+```bash
+docker build -t your-registry-ip:port/vpga-app:latest .
+```
+
+## Log in to the Docker Registry
+```bash
+docker login your-registry-ip:port
+```
+Enter your username and password when prompted.
+
+## Push the Image to the Registry
+```bash
+docker push your-registry-ip:port/vpga-app:latest
+```
+
+## Pull and Run the Image on TrueNAS
+On your TrueNAS server, pull the image:
+```bash
+docker pull your-registry-ip:port/vpga-app:latest
+```
+Then run the container:
+```bash
+docker run -p 3000:3000 \
+  -v /path/to/data:/app/backend/data \
+  -e NODE_ENV=production \
+  -e JWT_SECRET=your_jwt_secret_here \
+  your-registry-ip:port/vpga-app:latest
+```
