@@ -4,6 +4,7 @@
     <template v-if="auth.isLoggedIn">
       <router-link to="/">{{ localeStore.t('standings') }}</router-link>
       <router-link to="/rounds">{{ localeStore.t('rounds') }}</router-link>
+      <router-link to="/ompc">{{ localeStore.t('ompc') }}</router-link>
     </template>
     <template v-if="auth.isLoggedIn && auth.isAdmin">
       <span class="sep">|</span>

@@ -1,6 +1,7 @@
 
 const express = require('express')
 const db = require('../db')
+const { requireAuth, requireAdmin } = require('../middleware/auth')
 
 const router = express.Router()
 
@@ -38,9 +39,30 @@ function getRoundMatchCounts(participantCount) {
   return matchCounts
 }
 
-function clearNextRoundSlot(cupId, round, matchNumber, slotColumn) {
-  db.prepare(`UPDATE ompc_matches SET ${slotColumn} = NULL, winner_id = NULL, status = 'pending' WHERE cup_id = ? AND round = ? AND match_number = ?`)
-    .run(cupId, round, matchNumber)
+function clearFollowingMatches(cupId, round, matchNumber) {
+  const nextRound = round + 1
+  const nextMatchNumber = Math.ceil(matchNumber / 2)
+  const slotColumn = matchNumber % 2 === 1 ? 'player1_id' : 'player2_id'
+  const nextMatch = db.prepare('SELECT * FROM ompc_matches WHERE cup_id = ? AND round = ? AND match_number = ?').get(cupId, nextRound, nextMatchNumber)
+
+  if (!nextMatch) {
+    return
+  }
+
+  db.prepare(`UPDATE ompc_matches SET ${slotColumn} = NULL, winner_id = NULL, status = 'pending' WHERE id = ?`)
+    .run(nextMatch.id)
+
+  clearFollowingMatches(cupId, nextMatch.round, nextMatch.match_number)
+}
+
+function resetMatchResult(matchId) {
+  const match = db.prepare('SELECT * FROM ompc_matches WHERE id = ?').get(matchId)
+  if (!match) {
+    throw new Error('Match not found')
+  }
+
+  db.prepare("UPDATE ompc_matches SET winner_id = NULL, status = 'pending' WHERE id = ?").run(matchId)
+  clearFollowingMatches(match.cup_id, match.round, match.match_number)
 }
 
 function advanceWinner(matchId, winnerId, status) {
@@ -59,10 +81,12 @@ function advanceWinner(matchId, winnerId, status) {
   if (nextMatch) {
     db.prepare(`UPDATE ompc_matches SET ${slotColumn} = ?, winner_id = NULL, status = CASE WHEN status = 'completed' THEN 'pending' ELSE status END WHERE id = ?`)
       .run(winnerId, nextMatch.id)
+
+    clearFollowingMatches(match.cup_id, nextMatch.round, nextMatch.match_number)
   }
 }
 
-router.get('/cup/:season', (req, res) => {
+router.get('/cup/:season', requireAuth, (req, res) => {
   const { season } = req.params
   const cup = db.prepare('SELECT * FROM ompc_cup WHERE season = ?').get(season)
   if (!cup) return res.status(404).json({ error: 'OMPC cup not found' })
@@ -71,7 +95,7 @@ router.get('/cup/:season', (req, res) => {
   res.json({ ...cup, participants })
 })
 
-router.post('/cup', (req, res) => {
+router.post('/cup', requireAdmin, (req, res) => {
   const { season, created_by } = req.body
 
   try {
@@ -88,7 +112,7 @@ router.post('/cup', (req, res) => {
   }
 })
 
-router.delete('/cup/:season', (req, res) => {
+router.delete('/cup/:season', requireAdmin, (req, res) => {
   const { season } = req.params
   const existingCup = db.prepare('SELECT id FROM ompc_cup WHERE season = ?').get(season)
 
@@ -100,7 +124,7 @@ router.delete('/cup/:season', (req, res) => {
   res.json({ success: true })
 })
 
-router.post('/cup/:cup_id/participants', (req, res) => {
+router.post('/cup/:cup_id/participants', requireAdmin, (req, res) => {
   const { cup_id } = req.params
   const { member_ids } = req.body
   const insert = db.prepare('INSERT OR IGNORE INTO ompc_participants (cup_id, member_id) VALUES (?, ?)')
@@ -116,13 +140,13 @@ router.post('/cup/:cup_id/participants', (req, res) => {
   }
 })
 
-router.get('/cup/:cup_id/matches', (req, res) => {
+router.get('/cup/:cup_id/matches', requireAuth, (req, res) => {
   const { cup_id } = req.params
   const matches = db.prepare('SELECT * FROM ompc_matches WHERE cup_id = ? ORDER BY round ASC, match_number ASC, id ASC').all(cup_id)
   res.json(matches)
 })
 
-router.post('/cup/:cup_id/generate-bracket', (req, res) => {
+router.post('/cup/:cup_id/generate-bracket', requireAdmin, (req, res) => {
   const { cup_id } = req.params
   const { deadlines = {} } = req.body
   const participantIds = getParticipantIds(cup_id)
@@ -154,7 +178,7 @@ router.post('/cup/:cup_id/generate-bracket', (req, res) => {
   res.json({ success: true, total_rounds: totalRounds })
 })
 
-router.put('/match/:match_id/slot', (req, res) => {
+router.put('/match/:match_id/slot', requireAdmin, (req, res) => {
   const { match_id } = req.params
   const { slot, member_id } = req.body
 
@@ -183,7 +207,7 @@ router.put('/match/:match_id/slot', (req, res) => {
       const nextRound = match.round + 1
       const nextMatchNumber = Math.ceil(match.match_number / 2)
       const nextSlotColumn = match.match_number % 2 === 1 ? 'player1_id' : 'player2_id'
-      clearNextRoundSlot(match.cup_id, nextRound, nextMatchNumber, nextSlotColumn)
+      clearFollowingMatches(match.cup_id, match.round, match.match_number)
     }
   })
 
@@ -191,7 +215,7 @@ router.put('/match/:match_id/slot', (req, res) => {
   res.json({ success: true })
 })
 
-router.put('/cup/:cup_id/round/:round/deadline', (req, res) => {
+router.put('/cup/:cup_id/round/:round/deadline', requireAdmin, (req, res) => {
   const { cup_id, round } = req.params
   const { deadline_date } = req.body
 
@@ -199,12 +223,35 @@ router.put('/cup/:cup_id/round/:round/deadline', (req, res) => {
   res.json({ success: true })
 })
 
-router.post('/match/:match_id/result', (req, res) => {
+router.post('/match/:match_id/result', requireAuth, (req, res) => {
   const { match_id } = req.params
   const { winner_id, status } = req.body
 
+  const match = db.prepare('SELECT * FROM ompc_matches WHERE id = ?').get(match_id)
+  if (!match) {
+    return res.status(404).json({ error: 'Match not found' })
+  }
+
+  if (!match.player1_id || !match.player2_id) {
+    return res.status(400).json({ error: 'Both players must be assigned before reporting a result' })
+  }
+
+  const isParticipant = req.user.id === match.player1_id || req.user.id === match.player2_id
+  if (!req.user.is_admin && !isParticipant) {
+    return res.status(403).json({ error: 'Only players in this match can report its result' })
+  }
+
   try {
-    advanceWinner(match_id, winner_id || null, status)
+    if (winner_id == null) {
+      resetMatchResult(match_id)
+    } else {
+      const winnerId = Number(winner_id)
+      if (!winnerId || ![match.player1_id, match.player2_id].includes(winnerId)) {
+        return res.status(400).json({ error: 'Winner must be one of the players in the match' })
+      }
+      advanceWinner(match_id, winnerId, status)
+    }
+
     res.json({ success: true })
   } catch (error) {
     res.status(400).json({ error: error.message })

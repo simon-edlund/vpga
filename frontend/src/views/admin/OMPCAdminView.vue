@@ -112,6 +112,31 @@
                     </select>
                     <div v-else class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
                   </label>
+                  <div v-if="match.winner_id" class="winner-state">Winner: {{ memberName(match.winner_id) }}</div>
+                  <div v-if="canManageResult(match)" class="result-actions">
+                    <button
+                      class="sm"
+                      :disabled="reportingMatchId === match.id"
+                      @click="setWinner(match, match.player1_id)"
+                    >
+                      {{ reportingMatchId === match.id ? 'Saving...' : 'P1 won' }}
+                    </button>
+                    <button
+                      class="sm secondary"
+                      :disabled="reportingMatchId === match.id"
+                      @click="setWinner(match, match.player2_id)"
+                    >
+                      P2 won
+                    </button>
+                    <button
+                      v-if="match.winner_id"
+                      class="sm secondary"
+                      :disabled="reportingMatchId === match.id"
+                      @click="resetMatchResult(match)"
+                    >
+                      Reset
+                    </button>
+                  </div>
                 </article>
               </template>
             </div>
@@ -131,6 +156,7 @@ import api, {
   generateOMPCBracket,
   getOMPCMatches,
   getOMPCup,
+  updateOMPCMatchResult,
   updateOMPCMatchSlot,
   updateOMPCRoundDeadline,
 } from '../../api/index.js'
@@ -143,6 +169,7 @@ const members = ref([])
 const selectedMember = ref(null)
 const addingParticipant = ref(false)
 const resettingSeason = ref(false)
+const reportingMatchId = ref(null)
 const matches = ref([])
 const loading = ref(true)
 const errorMessage = ref('')
@@ -304,6 +331,10 @@ function isAssignedElsewhere(memberId, matchId) {
   return matches.value.some(match => match.id !== matchId && (match.player1_id === memberId || match.player2_id === memberId))
 }
 
+function canManageResult(match) {
+  return !!match.player1_id && !!match.player2_id
+}
+
 function participantAssignmentStatus(memberId) {
   const assignment = initialRoundAssignments.value.get(memberId)
   if (!assignment) {
@@ -421,6 +452,36 @@ async function changeSlot(match, slot, memberId) {
     await fetchMatches()
   } catch (error) {
     errorMessage.value = error.response?.data?.error || 'Could not update bracket slot.'
+  }
+}
+
+async function setWinner(match, winnerId) {
+  if (!winnerId || reportingMatchId.value) return
+  reportingMatchId.value = match.id
+  errorMessage.value = ''
+
+  try {
+    await updateOMPCMatchResult(match.id, winnerId)
+    await fetchMatches()
+  } catch (error) {
+    errorMessage.value = error.response?.data?.error || 'Could not update match result.'
+  } finally {
+    reportingMatchId.value = null
+  }
+}
+
+async function resetMatchResult(match) {
+  if (reportingMatchId.value) return
+  reportingMatchId.value = match.id
+  errorMessage.value = ''
+
+  try {
+    await updateOMPCMatchResult(match.id, null, 'pending')
+    await fetchMatches()
+  } catch (error) {
+    errorMessage.value = error.response?.data?.error || 'Could not reset match result.'
+  } finally {
+    reportingMatchId.value = null
   }
 }
 
@@ -692,6 +753,24 @@ onMounted(async () => {
   background: #f4f7f5;
   border: 1px solid #dbe8df;
   color: #4b5563;
+}
+
+.result-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.result-actions > button {
+  min-width: 0;
+}
+
+.winner-state {
+  font-size: 0.8rem;
+  color: #1f5a3f;
+  font-weight: 600;
+  margin-top: 0.1rem;
 }
 
 @media (max-width: 900px) {
