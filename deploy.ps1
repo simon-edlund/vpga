@@ -36,7 +36,7 @@ rm /tmp/${containername}_image.tar
 if docker container inspect ${containername} >/dev/null 2>&1; then
   docker restart ${containername}
 else
-  echo 'Container ${containername} not found; skipping restart'
+  echo "Container ${containername} not found; skipping restart"
 fi
 "@
 
