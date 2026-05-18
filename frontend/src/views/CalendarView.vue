@@ -62,7 +62,7 @@
           <tr>
             <td>{{ ev.title }}</td>
             <td>{{ ev.date }}</td>
-            <td>{{ formatDuration(ev) }}</td>
+            <td>{{ fmt(ev) }}</td>
             <td style="color:#6b7280;font-size:0.88rem">{{ ev.notes }}</td>
             <td v-if="auth.isAdmin">
               <template v-if="ev.type === 'manual'">
@@ -85,6 +85,7 @@ import { ref, onMounted } from 'vue'
 import api from '../api/index.js'
 import { useLocaleStore } from '../stores/locale.js'
 import { useAuthStore } from '../stores/auth.js'
+import { deriveDuration, formatDuration, buildDurationPayload } from '../utils/duration.js'
 
 const localeStore = useLocaleStore()
 const auth = useAuthStore()
@@ -103,38 +104,14 @@ const form = ref({
   notes:      '',
 })
 
-function addOneDay(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr + 'T12:00:00')
-  d.setDate(d.getDate() + 1)
-  return d.toISOString().slice(0, 10)
-}
-
-function addHoursToTime(timeStr, hours) {
-  const [h, m] = timeStr.split(':').map(Number)
-  const endH = (h + hours) % 24
-  return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function deriveDuration(ev) {
-  if (ev.start_time) return 'timed'
-  if (ev.date_end) return '2days'
-  return '1day'
-}
-
-function formatDuration(ev) {
-  if (ev.start_time) return `${ev.start_time} – ${addHoursToTime(ev.start_time, 6)}`
-  if (ev.date_end) return localeStore.t('duration2Days')
-  return localeStore.t('duration1Day')
-}
+const fmt = (ev) => formatDuration(ev, localeStore.t)
 
 function buildPayload(formData) {
   return {
     title:      formData.title,
     date:       formData.date,
-    date_end:   formData.duration === '2days' ? addOneDay(formData.date) : '',
-    start_time: formData.duration === 'timed'  ? formData.start_time : '',
     notes:      formData.notes,
+    ...buildDurationPayload(formData),
   }
 }
 

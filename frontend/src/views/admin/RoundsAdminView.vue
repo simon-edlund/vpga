@@ -63,7 +63,7 @@
             <td>{{ r.season }}</td>
             <td>VPGA{{ r.round_number }}</td>
             <td>{{ r.date }}</td>
-            <td>{{ formatDuration(r) }}</td>
+            <td>{{ fmt(r) }}</td>
             <td>{{ r.course }}</td>
             <td style="color:#6b7280;font-size:0.88rem">{{ r.notes }}</td>
             <td style="white-space:nowrap">
@@ -104,6 +104,7 @@
 import { ref, onMounted } from 'vue'
 import api from '../../api/index.js'
 import { useLocaleStore } from '../../stores/locale.js'
+import { addOneDay, deriveDuration, formatDuration, buildDurationPayload } from '../../utils/duration.js'
 
 const rounds   = ref([])
 const addError = ref('')
@@ -120,40 +121,16 @@ const form     = ref({
   notes:        '',
 })
 
-function addOneDay(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr + 'T12:00:00')
-  d.setDate(d.getDate() + 1)
-  return d.toISOString().slice(0, 10)
-}
-
-function addHoursToTime(timeStr, hours) {
-  const [h, m] = timeStr.split(':').map(Number)
-  const endH = (h + hours) % 24
-  return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function deriveDuration(r) {
-  if (r.start_time) return 'timed'
-  if (r.date_end) return '2days'
-  return '1day'
-}
-
-function formatDuration(r) {
-  if (r.start_time) return `${r.start_time} – ${addHoursToTime(r.start_time, 6)}`
-  if (r.date_end) return localeStore.t('duration2Days')
-  return localeStore.t('duration1Day')
-}
+const fmt = (r) => formatDuration(r, localeStore.t)
 
 function buildPayload(formData) {
   return {
     season:       formData.season,
     round_number: formData.round_number,
     date:         formData.date,
-    date_end:     formData.duration === '2days' ? addOneDay(formData.date) : '',
-    start_time:   formData.duration === 'timed'  ? formData.start_time : '',
     course:       formData.course,
     notes:        formData.notes,
+    ...buildDurationPayload(formData),
   }
 }
 

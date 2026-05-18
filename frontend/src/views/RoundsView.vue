@@ -46,18 +46,13 @@
 import { ref, onMounted } from 'vue'
 import api from '../api/index.js'
 import { useLocaleStore } from '../stores/locale.js'
+import { addHoursToTime } from '../utils/duration.js'
 
 const seasons        = ref([])
 const selectedSeason = ref(new Date().getFullYear())
 const rounds         = ref([])
 const localeStore = useLocaleStore()
 const calendarUrl = `${window.location.protocol}//${window.location.hostname}:3001/api/calendar/vpga.ics`
-
-function addHoursToTime(timeStr, hours) {
-  const [h, m] = timeStr.split(':').map(Number)
-  const endH = (h + hours) % 24
-  return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
 
 async function loadSeasons() {
   const res = await api.get('/api/standings')
