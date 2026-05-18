@@ -29,4 +29,4 @@ $tempFile = [System.IO.Path]::GetTempFileName()
 docker image save  ${containername}:latest ${containername}:${ver} -o $tempFile
 scp $tempFile truenas_admin@nas:/tmp/${containername}_image.tar
 rm $tempFile
-ssh truenas_admin@nas "docker image load -i /tmp/${containername}_image.tar; rm /tmp/${containername}_image.tar; docker restart ${containername}"
+ssh truenas_admin@nas "docker image load -i /tmp/${containername}_image.tar; rm /tmp/${containername}_image.tar; if docker container inspect ${containername} >/dev/null 2>&1; then docker restart ${containername}; else echo 'Container ${containername} not found; skipping restart'; fi"
