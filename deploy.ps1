@@ -29,5 +29,4 @@ $tempFile = [System.IO.Path]::GetTempFileName()
 docker image save  ${containername}:latest ${containername}:${ver} -o $tempFile
 scp $tempFile truenas_admin@nas:/tmp/${containername}_image.tar
 rm $tempFile
-ssh truenas_admin@nas "docker image load -i /tmp/${containername}_image.tar; rm /tmp/${containername}_image.tar"
-
+ssh truenas_admin@nas "docker image load -i /tmp/${containername}_image.tar; rm /tmp/${containername}_image.tar; docker restart ${containername}"
