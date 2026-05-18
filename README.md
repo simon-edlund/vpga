@@ -175,7 +175,14 @@ Default values:
 
 ```env
 PORT=3001
-DB_PATH=./data/golf.db
+DB_PATH=./data/vpga.db
+APP_BASE_URL=http://localhost:5173
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+SMTP_FROM="VPGA <no-reply@example.com>"
 ```
 
 The database and schema are created automatically when the backend starts.
@@ -194,8 +201,14 @@ There is no preset password.
 1. Open the login page.
 2. Enter `simon@edlund.nl`.
 3. Submit the form.
-4. The application will detect first login and prompt for a new password.
-5. After setting the password, you will be logged in and the email will be marked as verified.
+4. The application sends a verification email with a link that expires in 24 hours.
+5. Open that link to set a new password.
+6. After setting the password, you will be logged in and the email will be marked as verified.
+
+### Forgot Password
+
+On the login page, use **I forgot my password** to request a new password setup email.
+If the email exists for an active member, a 24-hour password setup link is sent.
 
 After that, future logins use:
 

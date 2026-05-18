@@ -62,6 +62,11 @@ export const useAuthStore = defineStore('auth', () => {
     return res.data
   }
 
+  async function requestPasswordSetup(userEmail) {
+    const res = await api.post('/api/auth/request-password-setup', { email: userEmail })
+    return res.data
+  }
+
   function logout() {
     token.value = null
     name.value = null
@@ -74,5 +79,16 @@ export const useAuthStore = defineStore('auth', () => {
     delete api.defaults.headers.common['Authorization']
   }
 
-  return { token, name, email, isAdmin, isLoggedIn, init, login, completeFirstLogin, logout }
+  return {
+    token,
+    name,
+    email,
+    isAdmin,
+    isLoggedIn,
+    init,
+    login,
+    completeFirstLogin,
+    requestPasswordSetup,
+    logout,
+  }
 })
