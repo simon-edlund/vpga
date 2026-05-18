@@ -99,10 +99,10 @@ function buildIcs(items) {
 function getOmpcRoundName(round, lang = 'sv', roundNameMap = {}) {
   const names = {
     sv: {
-      32: '16-delsfinal',
-      16: 'Åttondelsfinal',
-      8:  'Kvartsfinal',
-      4:  'Semifinal',
+      32: 'Sextondelsfinaler',
+      16: 'Åttondelsfinaler',
+      8:  'Kvartsfinaler',
+      4:  'Semifinaler',
       2:  'Final',
     },
     en: {
@@ -201,10 +201,10 @@ router.get('/all', (req, res) => {
       // Map round numbers to names (for 32, 16, 8, 4, 2)
       const names = {
         sv: {
-          32: '16-delsfinal',
-          16: 'Åttondelsfinal',
-          8:  'Kvartsfinal',
-          4:  'Semifinal',
+          32: 'Sextondelsfinaler',
+          16: 'Åttondelsfinaler',
+          8:  'Kvartsfinaler',
+          4:  'Semifinaler',
           2:  'Final',
         },
         en: {
