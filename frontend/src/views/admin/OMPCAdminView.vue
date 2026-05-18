@@ -79,7 +79,7 @@
                   <div class="deadline-box">
                     <label>
                       {{ localeStore.t('deadline') }}
-                      <input v-model="deadlineDrafts[round.roundNumber]" type="date" />
+                      <input v-model="deadlineDrafts[round.roundNumber]" type="date" lang="sv" />
                     </label>
                     <button class="sm secondary" @click="saveRoundDeadline(round.roundNumber)">{{ localeStore.t('save') }}</button>
                   </div>
