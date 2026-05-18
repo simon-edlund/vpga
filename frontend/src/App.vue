@@ -3,7 +3,6 @@
     <span class="brand">⛳ VPGA</span>
     <template v-if="auth.isLoggedIn">
       <router-link to="/">{{ localeStore.t('standings') }}</router-link>
-      <router-link to="/rounds">{{ localeStore.t('rounds') }}</router-link>
       <router-link to="/ompc">{{ localeStore.t('ompc') }}</router-link>
       <router-link to="/calendar">{{ localeStore.t('calendar') }}</router-link>
     </template>
