@@ -33,6 +33,10 @@
   <main>
     <router-view />
   </main>
+
+  <footer class="app-footer">
+    version: {{ appVersion }}
+  </footer>
 </template>
 
 <script setup>
@@ -43,6 +47,8 @@ import { useLocaleStore } from './stores/locale.js'
 const auth = useAuthStore()
 const localeStore = useLocaleStore()
 const router = useRouter()
+
+const appVersion = import.meta.env.VITE_VERSION || 'unknown'
 
 auth.init()
 
