@@ -1,12 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
 
 const translations = {
   sv: {
-    language: 'Språk',
-    swedish: 'Svenska',
-    english: 'Engelska',
-    standings: 'Ställning',
     rounds: 'Rundor',
     members: 'Medlemmar',
     enterScores: 'Registrera scorer',
@@ -136,140 +131,6 @@ const translations = {
     couldNotUpdateRoundDeadline: 'Kunde inte uppdatera deadline för omgången.',
     resetOmpcSeasonConfirm: 'Nollställ OMPC-säsong {season}? Detta tar bort cupen, deltagarna, matcherna och deadlines.',
   },
-  en: {
-    language: 'Language',
-    swedish: 'Swedish',
-    english: 'English',
-    standings: 'Standings',
-    rounds: 'Rounds',
-    members: 'Members',
-    enterScores: 'Enter Scores',
-    changePassword: 'Change password',
-    logout: 'Log out',
-    seasonStandings: 'Season Standings',
-    season: 'Season',
-    loading: 'Loading...',
-    noRoundsForSeason: 'No rounds have been created for {season} yet.',
-    player: 'Player',
-    best4: 'Best 4',
-    best4Legend: 'The best four results are highlighted in green.',
-    absentLegend: 'Absent players get the highest score in the round + 1.',
-    noSeasonsFound: 'No seasons found. An admin needs to create rounds first.',
-    round: 'Round',
-    date: 'Date',
-    course: 'Course',
-    notes: 'Notes',
-    viewScores: 'View scores',
-    backToRounds: 'Back to rounds',
-    netStrokes: 'Net strokes',
-    absent: 'Absent',
-    noScoresYet: 'No scores have been entered for this round yet.',
-    email: 'Email',
-    password: 'Password',
-    continue: 'Continue',
-    firstLoginHelp: 'For a first login, enter your email and continue. You will then be prompted to set your password.',
-    firstLoginVerified: 'First login verified for {email}. Set your password to continue.',
-    newPassword: 'New password',
-    repeatPassword: 'Repeat password',
-    setPassword: 'Set password',
-    invalidEmailOrPassword: 'Invalid email or password',
-    passwordsDoNotMatch: 'Passwords do not match',
-    couldNotCompleteFirstLogin: 'Could not complete first login',
-    currentPassword: 'Current password',
-    repeatNewPassword: 'Repeat new password',
-    passwordChanged: 'Password changed!',
-    errorChangingPassword: 'Error changing password',
-    save: 'Save',
-    name: 'Name',
-    addMember: 'Add Member',
-    fullName: 'Full name',
-    golfId: 'Golf ID',
-    handicap: 'Handicap',
-    admin: 'Admin',
-    verified: 'Verified',
-    active: 'Active',
-    yes: 'Yes',
-    no: 'No',
-    cancel: 'Cancel',
-    edit: 'Edit',
-    resetLogin: 'Reset login',
-    delete: 'Delete',
-    deleteMemberConfirm: 'Delete member "{name}"? This also removes the player\'s scores.',
-    resetLoginConfirm: 'Reset login for "{name}"? The member will need to complete first login again.',
-    manageRounds: 'Manage Rounds',
-    addRound: 'Add Round',
-    roundNumber: 'Round #',
-    noRoundsYet: 'No rounds yet.',
-    errorAddingRound: 'Error adding round',
-    dateEnd: 'End date (optional)',
-    startTime: 'Start time (optional)',
-    subscribeCalendar: 'Subscribe to calendar',
-    calendar: 'Calendar',
-    events: 'Events (Calendar)',
-    ompc: 'OMPC',
-    addEvent: 'Add Event',
-    eventTitle: 'Title',
-    noEventsYet: 'No events yet.',
-    deleteEventConfirm: 'Delete event "{title}"?',
-    errorAddingEvent: 'Error adding event',
-    deleteRoundConfirm: 'Delete round {round} ({date})? All scores for this round will be deleted.',
-    selectRound: 'Round',
-    selectRoundPlaceholder: 'Select round',
-    enterNetStrokesHelp: 'Enter net strokes for each player. Leave blank for absent players, who will automatically receive the highest score + 1.',
-    absentPlaceholder: 'absent',
-    saveScores: 'Save Scores',
-    saved: 'Saved!',
-    selectRoundAbove: 'Select a round above to enter scores.',
-    noRoundsCreateFirst: 'No rounds exist yet. Create rounds first.',
-    ompcAdminTitle: 'OMPC Admin',
-    ompcPlayerTitle: 'OMPC',
-    ompcAdminIntro: 'Create the season cup, add players, then place them into bracket slots with dropdown selectors.',
-    ompcPlayerIntro: 'Follow the season cup bracket and report the winner of your own match.',
-    loadSeason: 'Load season',
-    noOmpcCupForSeason: 'No OMPC cup exists for this season yet.',
-    ompcParticipants: 'Participants',
-    ompcParticipantsHelp: 'Add members to the cup. Then assign them to bracket slots from the dropdowns below.',
-    ompcInCup: 'In Cup',
-    selectMember: 'Select member',
-    selectPlayer: 'Select player',
-    addParticipantToCup: 'Add participant',
-    createOmpcCup: 'Create OMPC cup',
-    generateBracketTree: 'Generate bracket tree',
-    resetOmpcSeason: 'Reset OMPC season',
-    resetting: 'Resetting...',
-    ompcBracket: 'Bracket',
-    ompcBracketAdminHelp: 'Each column is one OMPC stage. Use the slot selectors to place players in each match.',
-    ompcBracketPlayerHelp: 'Only players in a match can report or reset its result.',
-    deadline: 'Deadline',
-    notSet: 'Not set',
-    winnerLabel: 'Winner: {name}',
-    saving: 'Saving...',
-    iWon: 'I won',
-    playerWon: '{name} won',
-    resetResult: 'Reset result',
-    p1Won: 'P1 won',
-    p2Won: 'P2 won',
-    reset: 'Reset',
-    matchSingular: 'match',
-    matchPlural: 'matches',
-    final: 'Final',
-    semifinals: 'Semifinals',
-    quarterfinals: 'Quarterfinals',
-    roundOf: 'Round of {size}',
-    winnerOfMatch: 'Winner of Match {match}',
-    unassigned: 'Unassigned',
-    assignedToMatch: 'Assigned to Match {match} {slot}',
-    couldNotLoadOmpcCup: 'Could not load OMPC cup.',
-    couldNotCreateOmpcCup: 'Could not create OMPC cup.',
-    couldNotResetOmpcSeason: 'Could not reset OMPC season.',
-    couldNotAddParticipant: 'Could not add participant.',
-    couldNotGenerateBracket: 'Could not generate bracket.',
-    couldNotUpdateBracketSlot: 'Could not update bracket slot.',
-    couldNotUpdateMatchResult: 'Could not update match result.',
-    couldNotResetMatchResult: 'Could not reset match result.',
-    couldNotUpdateRoundDeadline: 'Could not update round deadline.',
-    resetOmpcSeasonConfirm: 'Reset OMPC season {season}? This removes the cup, participants, matches, and deadlines.',
-  },
 }
 
 function interpolate(text, params = {}) {
@@ -277,21 +138,9 @@ function interpolate(text, params = {}) {
 }
 
 export const useLocaleStore = defineStore('locale', () => {
-  const locale = ref(localStorage.getItem('locale') || 'sv')
-
-  watch(locale, value => {
-    localStorage.setItem('locale', value === 'en' ? 'en' : 'sv')
-  })
-
-  function setLocale(value) {
-    locale.value = value === 'en' ? 'en' : 'sv'
-  }
-
   function t(key, params = {}) {
-    const language = translations[locale.value] || translations.sv
-    const fallback = translations.en[key] || key
-    return interpolate(language[key] || fallback, params)
+    return interpolate(translations.sv[key] ?? key, params)
   }
 
-  return { locale, setLocale, t }
+  return { t }
 })
