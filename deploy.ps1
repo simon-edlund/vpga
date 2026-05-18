@@ -22,7 +22,7 @@ Write-Host ""
 $containername = if ($args[0] -eq "prod") { "vpga" } else { "vpga-stage" }
 
 docker build `
-  --build-arg VITE_VERSION=${ver} `
+  --build-arg VPGA_VERSION=${ver} `
   -t ${containername}:latest -t ${containername}:${ver} .
 
 $tempFile = [System.IO.Path]::GetTempFileName()
