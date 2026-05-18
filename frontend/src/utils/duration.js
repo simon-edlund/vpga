@@ -11,8 +11,8 @@ export function addOneDay(dateStr) {
 
 /**
  * Adds `hours` to a HH:MM time string and returns the resulting HH:MM string.
- * Handles midnight wraparound (result is modulo 24h).
- * Returns '' if timeStr is falsy or not in HH:MM format.
+ * Handles midnight wraparound: times crossing midnight wrap to the next morning
+ * (e.g. 22:00 + 6h → 04:00). For typical use (golf rounds), this won't occur.
  */
 export function addHoursToTime(timeStr, hours) {
   if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return ''
