@@ -159,7 +159,7 @@ router.get('/:lang(vpga.ics|sv/vpga.ics|en/vpga.ics)', (req, res) => {
   }
   const ompcDeadlines = ompcDeadlinesRaw.map(r => ({
     uid: 'vpga-ompc-round-' + r.round + '@vpga',
-    title: getOmpcRoundName(r.round, lang, roundNameMap),
+    title: 'OMPC ' + getOmpcRoundName(r.round, lang, roundNameMap) + ' deadline',
     date: r.deadline_date,
     date_end: '',
     start_time: '',
@@ -236,7 +236,7 @@ router.get('/all', (req, res) => {
 
     const ompcDeadlines = ompcDeadlinesRaw.map(r => ({
       id: 'ompc-round-' + r.round,
-      title: getOmpcRoundName(r.round, 'sv'),
+      title: 'OMPC ' + getOmpcRoundName(r.round, 'sv') + ' deadline',
       date: r.deadline_date,
       date_end: '',
       start_time: '',
