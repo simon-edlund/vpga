@@ -30,14 +30,5 @@ docker image save  ${containername}:latest ${containername}:${ver} -o $tempFile
 scp $tempFile truenas_admin@nas:/tmp/${containername}_image.tar
 rm $tempFile
 
-$remoteDeploy = @"
-docker image load -i /tmp/{0}_image.tar
-rm /tmp/{0}_image.tar
-if docker container inspect {0} >/dev/null 2>&1; then
-  docker restart {0}
-else
-  echo "Container {0} not found; skipping restart"
-fi
-"@ -f $containername
-
-ssh truenas_admin@nas $remoteDeploy
+$remoteDeploy = "docker image load -i /tmp/${containername}_image.tar; rm /tmp/${containername}_image.tar; if docker container inspect ${containername} >/dev/null 2>&1; then docker restart ${containername}; else echo 'Container ${containername} not found; skipping restart'; fi"
+ssh truenas_admin@nas "$remoteDeploy"
