@@ -23,12 +23,16 @@
               <input v-model="form.date" type="date" required />
             </label>
             <label>
-              {{ localeStore.t('dateEnd') }}
-              <input v-model="form.date_end" type="date" />
+              {{ localeStore.t('duration') }}
+              <select v-model="form.duration" style="width:130px">
+                <option value="1day">{{ localeStore.t('duration1Day') }}</option>
+                <option value="2days">{{ localeStore.t('duration2Days') }}</option>
+                <option value="timed">{{ localeStore.t('durationTimed') }}</option>
+              </select>
             </label>
-            <label>
+            <label v-if="form.duration === 'timed'">
               {{ localeStore.t('startTime') }}
-              <input v-model="form.start_time" type="time" style="width:110px" />
+              <input v-model="form.start_time" type="time" style="width:110px" required />
             </label>
             <label>
               {{ localeStore.t('notes') }}
@@ -48,8 +52,7 @@
         <tr>
           <th>{{ localeStore.t('eventTitle') }}</th>
           <th>{{ localeStore.t('date') }}</th>
-          <th>{{ localeStore.t('dateEnd') }}</th>
-          <th>{{ localeStore.t('startTime') }}</th>
+          <th>{{ localeStore.t('duration') }}</th>
           <th>{{ localeStore.t('notes') }}</th>
           <th v-if="auth.isAdmin">{{ localeStore.t('edit') }}/{{ localeStore.t('delete') }}</th>
         </tr>
@@ -59,8 +62,7 @@
           <tr>
             <td>{{ ev.title }}</td>
             <td>{{ ev.date }}</td>
-            <td>{{ ev.date_end || '–' }}</td>
-            <td>{{ ev.start_time || '–' }}</td>
+            <td>{{ formatDuration(ev) }}</td>
             <td style="color:#6b7280;font-size:0.88rem">{{ ev.notes }}</td>
             <td v-if="auth.isAdmin">
               <template v-if="ev.type === 'manual'">
@@ -71,7 +73,7 @@
           </tr>
         </template>
         <tr v-if="allEvents.length === 0">
-          <td colspan="5" style="color:#9ca3af;text-align:center">{{ localeStore.t('noEventsYet') }}</td>
+          <td colspan="4" style="color:#9ca3af;text-align:center">{{ localeStore.t('noEventsYet') }}</td>
         </tr>
       </tbody>
     </table>
@@ -79,7 +81,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '../api/index.js'
 import { useLocaleStore } from '../stores/locale.js'
 import { useAuthStore } from '../stores/auth.js'
@@ -96,10 +98,45 @@ const addError  = ref('')
 const form = ref({
   title:      '',
   date:       '',
-  date_end:   '',
+  duration:   '1day',
   start_time: '',
   notes:      '',
 })
+
+function addOneDay(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+function addHoursToTime(timeStr, hours) {
+  const [h, m] = timeStr.split(':').map(Number)
+  const endH = (h + hours) % 24
+  return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function deriveDuration(ev) {
+  if (ev.start_time) return 'timed'
+  if (ev.date_end) return '2days'
+  return '1day'
+}
+
+function formatDuration(ev) {
+  if (ev.start_time) return `${ev.start_time} – ${addHoursToTime(ev.start_time, 6)}`
+  if (ev.date_end) return localeStore.t('duration2Days')
+  return localeStore.t('duration1Day')
+}
+
+function buildPayload(formData) {
+  return {
+    title:      formData.title,
+    date:       formData.date,
+    date_end:   formData.duration === '2days' ? addOneDay(formData.date) : '',
+    start_time: formData.duration === 'timed'  ? formData.start_time : '',
+    notes:      formData.notes,
+  }
+}
 
 async function load() {
   // Fetch all events: manual, rounds, OMPC deadlines
@@ -124,8 +161,8 @@ function filterEvents() {
 async function addEvent() {
   addError.value = ''
   try {
-    await api.post('/api/events', form.value)
-    form.value = { title: '', date: '', date_end: '', start_time: '', notes: '' }
+    await api.post('/api/events', buildPayload(form.value))
+    form.value = { title: '', date: '', duration: '1day', start_time: '', notes: '' }
     load()
   } catch (e) {
     addError.value = e.response?.data?.error || localeStore.t('errorAddingEvent')
@@ -137,12 +174,18 @@ onMounted(load)
 // Edit/delete logic for manual events
 function startEdit(ev) {
   editing.value = { ...ev }
-  Object.assign(form.value, ev)
+  form.value = {
+    title:      ev.title,
+    date:       ev.date,
+    duration:   deriveDuration(ev),
+    start_time: ev.start_time || '',
+    notes:      ev.notes || '',
+  }
 }
 
 function cancelEdit() {
   editing.value = null
-  form.value = { title: '', date: '', date_end: '', start_time: '', notes: '' }
+  form.value = { title: '', date: '', duration: '1day', start_time: '', notes: '' }
 }
 
 async function saveEdit() {
@@ -150,9 +193,9 @@ async function saveEdit() {
   addError.value = ''
   try {
     await api.put(`/api/events/${editing.value.id}`,
-      { ...form.value, id: undefined })
+      { ...buildPayload(form.value), id: undefined })
     editing.value = null
-    form.value = { title: '', date: '', date_end: '', start_time: '', notes: '' }
+    form.value = { title: '', date: '', duration: '1day', start_time: '', notes: '' }
     load()
   } catch (e) {
     addError.value = e.response?.data?.error || localeStore.t('errorAddingEvent')

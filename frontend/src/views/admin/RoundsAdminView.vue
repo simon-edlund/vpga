@@ -19,12 +19,16 @@
             <input v-model="form.date" type="date" required />
           </label>
           <label>
-            {{ localeStore.t('dateEnd') }}
-            <input v-model="form.date_end" type="date" />
+            {{ localeStore.t('duration') }}
+            <select v-model="form.duration" style="width:130px">
+              <option value="1day">{{ localeStore.t('duration1Day') }}</option>
+              <option value="2days">{{ localeStore.t('duration2Days') }}</option>
+              <option value="timed">{{ localeStore.t('durationTimed') }}</option>
+            </select>
           </label>
-          <label>
+          <label v-if="form.duration === 'timed'">
             {{ localeStore.t('startTime') }}
-            <input v-model="form.start_time" type="time" style="width:110px" />
+            <input v-model="form.start_time" type="time" style="width:110px" required />
           </label>
           <label>
             {{ localeStore.t('course') }}
@@ -46,8 +50,7 @@
           <th>{{ localeStore.t('season') }}</th>
           <th>{{ localeStore.t('round') }}</th>
           <th>{{ localeStore.t('date') }}</th>
-          <th>{{ localeStore.t('dateEnd') }}</th>
-          <th>{{ localeStore.t('startTime') }}</th>
+          <th>{{ localeStore.t('duration') }}</th>
           <th>{{ localeStore.t('course') }}</th>
           <th>{{ localeStore.t('notes') }}</th>
           <th></th>
@@ -60,8 +63,7 @@
             <td>{{ r.season }}</td>
             <td>VPGA{{ r.round_number }}</td>
             <td>{{ r.date }}</td>
-            <td>{{ r.date_end || '–' }}</td>
-            <td>{{ r.start_time || '–' }}</td>
+            <td>{{ formatDuration(r) }}</td>
             <td>{{ r.course }}</td>
             <td style="color:#6b7280;font-size:0.88rem">{{ r.notes }}</td>
             <td style="white-space:nowrap">
@@ -74,8 +76,14 @@
             <td><input v-model.number="editForm.season" type="number" style="width:70px" /></td>
             <td><input v-model.number="editForm.round_number" type="number" style="width:55px" /></td>
             <td><input v-model="editForm.date" type="date" /></td>
-            <td><input v-model="editForm.date_end" type="date" /></td>
-            <td><input v-model="editForm.start_time" type="time" style="width:100px" /></td>
+            <td>
+              <select v-model="editForm.duration" style="width:120px">
+                <option value="1day">{{ localeStore.t('duration1Day') }}</option>
+                <option value="2days">{{ localeStore.t('duration2Days') }}</option>
+                <option value="timed">{{ localeStore.t('durationTimed') }}</option>
+              </select>
+              <input v-if="editForm.duration === 'timed'" v-model="editForm.start_time" type="time" style="width:100px;margin-left:4px" required />
+            </td>
             <td><input v-model="editForm.course" type="text" style="min-width:130px" /></td>
             <td><input v-model="editForm.notes" type="text" style="min-width:130px" /></td>
             <td style="white-space:nowrap">
@@ -85,7 +93,7 @@
           </tr>
         </template>
         <tr v-if="rounds.length === 0">
-          <td colspan="8" style="color:#9ca3af;text-align:center">{{ localeStore.t('noRoundsYet') }}</td>
+          <td colspan="7" style="color:#9ca3af;text-align:center">{{ localeStore.t('noRoundsYet') }}</td>
         </tr>
       </tbody>
     </table>
@@ -106,11 +114,48 @@ const form     = ref({
   season:       new Date().getFullYear(),
   round_number: 1,
   date:         '',
-  date_end:     '',
+  duration:     '1day',
   start_time:   '',
   course:       '',
   notes:        '',
 })
+
+function addOneDay(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+function addHoursToTime(timeStr, hours) {
+  const [h, m] = timeStr.split(':').map(Number)
+  const endH = (h + hours) % 24
+  return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function deriveDuration(r) {
+  if (r.start_time) return 'timed'
+  if (r.date_end) return '2days'
+  return '1day'
+}
+
+function formatDuration(r) {
+  if (r.start_time) return `${r.start_time} – ${addHoursToTime(r.start_time, 6)}`
+  if (r.date_end) return localeStore.t('duration2Days')
+  return localeStore.t('duration1Day')
+}
+
+function buildPayload(formData) {
+  return {
+    season:       formData.season,
+    round_number: formData.round_number,
+    date:         formData.date,
+    date_end:     formData.duration === '2days' ? addOneDay(formData.date) : '',
+    start_time:   formData.duration === 'timed'  ? formData.start_time : '',
+    course:       formData.course,
+    notes:        formData.notes,
+  }
+}
 
 async function load() {
   const res = await api.get('/api/rounds')
@@ -120,10 +165,10 @@ async function load() {
 async function addRound() {
   addError.value = ''
   try {
-    await api.post('/api/rounds', form.value)
+    await api.post('/api/rounds', buildPayload(form.value))
     form.value.round_number++
     form.value.date = ''
-    form.value.date_end = ''
+    form.value.duration = '1day'
     form.value.start_time = ''
     form.value.course = ''
     load()
@@ -144,7 +189,7 @@ function startEdit(r) {
     season:       r.season,
     round_number: r.round_number,
     date:         r.date,
-    date_end:     r.date_end || '',
+    duration:     deriveDuration(r),
     start_time:   r.start_time || '',
     course:       r.course,
     notes:        r.notes || '',
@@ -152,7 +197,7 @@ function startEdit(r) {
 }
 
 async function saveEdit() {
-  await api.put(`/api/rounds/${editingId.value}`, editForm.value)
+  await api.put(`/api/rounds/${editingId.value}`, buildPayload(editForm.value))
   editingId.value = null
   load()
 }

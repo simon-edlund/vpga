@@ -30,7 +30,7 @@
       <tbody>
         <tr v-for="round in rounds" :key="round.id">
           <td>VPGA{{ round.round_number }}</td>
-          <td>{{ round.date }}{{ round.date_end ? ' / ' + round.date_end : '' }}</td>
+          <td>{{ round.date }}{{ round.start_time ? ' · ' + round.start_time + ' – ' + addHoursToTime(round.start_time, 6) : round.date_end ? ' – ' + round.date_end : '' }}</td>
           <td>{{ round.course }}</td>
           <td style="color:#6b7280;font-size:0.88rem">{{ round.notes }}</td>
           <td>
@@ -52,6 +52,12 @@ const selectedSeason = ref(new Date().getFullYear())
 const rounds         = ref([])
 const localeStore = useLocaleStore()
 const calendarUrl = `${window.location.protocol}//${window.location.hostname}:3001/api/calendar/vpga.ics`
+
+function addHoursToTime(timeStr, hours) {
+  const [h, m] = timeStr.split(':').map(Number)
+  const endH = (h + hours) % 24
+  return `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
 
 async function loadSeasons() {
   const res = await api.get('/api/standings')
