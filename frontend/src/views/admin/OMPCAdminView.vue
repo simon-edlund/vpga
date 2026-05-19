@@ -89,7 +89,7 @@
               <template v-for="(match, idx) in bracketGridMatches" :key="'match-' + match.id">
                 <article class="match-card"
                   :style="{ gridColumn: match.gridColumn, gridRow: `${match.gridRow} / span 2` }">
-                  <div class="match-meta">Match {{ match.match_number }}</div>
+                  <div class="match-meta">Match {{ matchDisplayNumbers.get(match.id) }}</div>
                   <label class="slot-editor">
                     <select
                       v-if="isEditableSlot(match, 'player1')"
@@ -268,8 +268,41 @@ function roundLabel(roundNumber, totalRounds, matchCount) {
   return localeStore.t('roundOf', { size: stageSize })
 }
 
+const matchesSortedByRound = computed(() => {
+  const map = new Map()
+  for (const match of matches.value) {
+    if (!map.has(match.round)) map.set(match.round, [])
+    map.get(match.round).push(match)
+  }
+  for (const arr of map.values()) {
+    arr.sort((a, b) => a.match_number - b.match_number)
+  }
+  return map
+})
+
+const matchDisplayNumbers = computed(() => {
+  const map = new Map()
+  let counter = 1
+  const sortedRounds = [...matchesSortedByRound.value.keys()].sort((a, b) => a - b)
+  for (const round of sortedRounds) {
+    for (const match of matchesSortedByRound.value.get(round)) {
+      map.set(match.id, counter++)
+    }
+  }
+  return map
+})
+
 function feederMatchNumber(matchNumber, slot) {
   return slot === 'player1' ? matchNumber * 2 - 1 : matchNumber * 2
+}
+
+function feederDisplayNumber(match, slot) {
+  const roundMatches = matchesSortedByRound.value.get(match.round) || []
+  const positionInRound = roundMatches.findIndex(m => m.id === match.id) + 1
+  const prevRoundMatches = matchesSortedByRound.value.get(match.round - 1) || []
+  const feederPosition = slot === 'player1' ? 2 * positionInRound - 1 : 2 * positionInRound
+  const feederMatch = prevRoundMatches[feederPosition - 1]
+  return feederMatch ? matchDisplayNumbers.value.get(feederMatch.id) : null
 }
 
 function isEditableSlot(match, slot) {
@@ -288,7 +321,7 @@ function slotDisplay(match, slot) {
     return memberName(slotValue)
   }
 
-  const sourceMatchNumber = feederMatchNumber(match.match_number, slot)
+  const sourceMatchNumber = feederDisplayNumber(match, slot)
   return localeStore.t('winnerOfMatch', { match: sourceMatchNumber })
 }
 
@@ -351,7 +384,7 @@ function participantAssignmentStatus(memberId) {
 }
 
 function matchNumberById(matchId) {
-  return matches.value.find(match => match.id === matchId)?.match_number || '?'
+  return matchDisplayNumbers.value.get(matchId) || '?'
 }
 
 async function fetchMembers() {

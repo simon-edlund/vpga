@@ -51,7 +51,7 @@
 
               <template v-for="match in bracketGridMatches" :key="'match-' + match.id">
                 <article class="match-card" :style="{ gridColumn: match.gridColumn, gridRow: `${match.gridRow} / span 2` }">
-                  <div class="match-meta">Match {{ match.match_number }}</div>
+                  <div class="match-meta">Match {{ matchDisplayNumbers.get(match.id) }}</div>
                   <div class="slot-readonly">{{ slotDisplay(match, 'player1') }}</div>
                   <div class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
                   <div v-if="match.winner_id" class="winner-state">{{ localeStore.t('winnerLabel', { name: memberName(match.winner_id) }) }}</div>
@@ -181,8 +181,37 @@ function roundLabel(roundNumber) {
   return localeStore.t('roundOf', { size: stageSize })
 }
 
-function feederMatchNumber(matchNumber, slot) {
-  return slot === 'player1' ? matchNumber * 2 - 1 : matchNumber * 2
+const matchesSortedByRound = computed(() => {
+  const map = new Map()
+  for (const match of matches.value) {
+    if (!map.has(match.round)) map.set(match.round, [])
+    map.get(match.round).push(match)
+  }
+  for (const arr of map.values()) {
+    arr.sort((a, b) => a.match_number - b.match_number)
+  }
+  return map
+})
+
+const matchDisplayNumbers = computed(() => {
+  const map = new Map()
+  let counter = 1
+  const sortedRounds = [...matchesSortedByRound.value.keys()].sort((a, b) => a - b)
+  for (const round of sortedRounds) {
+    for (const match of matchesSortedByRound.value.get(round)) {
+      map.set(match.id, counter++)
+    }
+  }
+  return map
+})
+
+function feederDisplayNumber(match, slot) {
+  const roundMatches = matchesSortedByRound.value.get(match.round) || []
+  const positionInRound = roundMatches.findIndex(m => m.id === match.id) + 1
+  const prevRoundMatches = matchesSortedByRound.value.get(match.round - 1) || []
+  const feederPosition = slot === 'player1' ? 2 * positionInRound - 1 : 2 * positionInRound
+  const feederMatch = prevRoundMatches[feederPosition - 1]
+  return feederMatch ? matchDisplayNumbers.value.get(feederMatch.id) : null
 }
 
 function slotDisplay(match, slot) {
@@ -191,7 +220,7 @@ function slotDisplay(match, slot) {
     return memberName(slotValue)
   }
 
-  return localeStore.t('winnerOfMatch', { match: feederMatchNumber(match.match_number, slot) })
+  return localeStore.t('winnerOfMatch', { match: feederDisplayNumber(match, slot) })
 }
 
 function memberName(id) {
