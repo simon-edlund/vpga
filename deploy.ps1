@@ -31,3 +31,12 @@ scp $tempFile truenas_admin@nas:/tmp/${containername}_image.tar
 rm $tempFile
 ssh truenas_admin@nas "docker image load -i /tmp/${containername}_image.tar; rm /tmp/${containername}_image.tar"
 
+$restartCommand = @"
+APP_NAME='${containername}'
+if midclt call -j app.stop "`$APP_NAME" >/dev/null; then
+  midclt call app.start "`$APP_NAME"
+else
+  echo "Unable to stop app `$APP_NAME on TrueNAS. Skipping restart." >&2
+fi
+"@
+ssh truenas_admin@nas "sh -c '$restartCommand'"
