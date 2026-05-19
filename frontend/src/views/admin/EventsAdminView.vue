@@ -12,15 +12,15 @@
           </label>
           <label>
             {{ localeStore.t('date') }}
-            <input v-model="form.date" type="date" required />
+            <input v-model="form.date" type="date" lang="sv" required />
           </label>
           <label>
             {{ localeStore.t('dateEnd') }}
-            <input v-model="form.date_end" type="date" />
+            <input v-model="form.date_end" type="date" lang="sv" />
           </label>
           <label>
             {{ localeStore.t('startTime') }}
-            <input v-model="form.start_time" type="time" style="width:110px" />
+            <input v-model="form.start_time" type="time" lang="sv" style="width:110px" />
           </label>
           <label>
             {{ localeStore.t('notes') }}
@@ -60,9 +60,9 @@
           <!-- inline edit row -->
           <tr v-else style="background:#f0f9ff">
             <td><input v-model="editForm.title" type="text" style="min-width:160px" /></td>
-            <td><input v-model="editForm.date" type="date" /></td>
-            <td><input v-model="editForm.date_end" type="date" /></td>
-            <td><input v-model="editForm.start_time" type="time" style="width:100px" /></td>
+            <td><input v-model="editForm.date" type="date" lang="sv" /></td>
+            <td><input v-model="editForm.date_end" type="date" lang="sv" /></td>
+            <td><input v-model="editForm.start_time" type="time" lang="sv" style="width:100px" /></td>
             <td><input v-model="editForm.notes" type="text" style="min-width:140px" /></td>
             <td style="white-space:nowrap">
               <button class="sm" @click="saveEdit" style="margin-right:4px">{{ localeStore.t('save') }}</button>
