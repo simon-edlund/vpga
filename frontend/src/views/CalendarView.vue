@@ -20,7 +20,7 @@
             </label>
             <label>
               {{ localeStore.t('date') }}
-              <input v-model="form.date" type="date" required />
+              <input v-model="form.date" type="date" lang="sv" required />
             </label>
             <label>
               {{ localeStore.t('duration') }}
@@ -32,7 +32,7 @@
             </label>
             <label v-if="form.duration === 'timed'">
               {{ localeStore.t('startTime') }}
-              <input v-model="form.start_time" type="time" style="width:110px" required />
+              <input v-model="form.start_time" type="time" lang="sv" style="width:110px" required />
             </label>
             <label>
               {{ localeStore.t('notes') }}

@@ -2,6 +2,8 @@
 
 # Stage 1: Build frontend
 FROM node:18 AS build-frontend
+ARG VPGA_VERSION=unknown
+ENV VITE_VERSION=$VPGA_VERSION
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 RUN cd frontend && npm install
@@ -11,6 +13,11 @@ RUN cd frontend && npm run build
 # Stage 2: Build backend and include frontend build
 FROM node:18
 WORKDIR /app
+
+# Accept VITE_VERSION as build arg and set as env
+ARG VITE_VERSION=unknown
+ENV VITE_VERSION=$VITE_VERSION
+
 COPY backend/package.json backend/package-lock.json ./backend/
 RUN cd backend && npm install
 COPY backend ./backend

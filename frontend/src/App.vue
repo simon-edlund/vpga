@@ -3,7 +3,6 @@
     <span class="brand">⛳ VPGA</span>
     <template v-if="auth.isLoggedIn">
       <router-link to="/">{{ localeStore.t('standings') }}</router-link>
-      <router-link to="/rounds">{{ localeStore.t('rounds') }}</router-link>
       <router-link to="/ompc">{{ localeStore.t('ompc') }}</router-link>
       <router-link to="/calendar">{{ localeStore.t('calendar') }}</router-link>
     </template>
@@ -15,13 +14,6 @@
       <router-link to="/admin/ompc">{{ localeStore.t('ompc') }}</router-link>
     </template>
     <div class="nav-right">
-      <label class="locale-picker">
-        <span>{{ localeStore.t('language') }}</span>
-        <select v-model="localeStore.locale">
-          <option value="sv">{{ localeStore.t('swedish') }}</option>
-          <option value="en">{{ localeStore.t('english') }}</option>
-        </select>
-      </label>
       <template v-if="auth.isLoggedIn">
         <span class="username">{{ auth.name }}</span>
         <router-link to="/change-password" class="small-link">{{ localeStore.t('changePassword') }}</router-link>
@@ -33,6 +25,10 @@
   <main>
     <router-view />
   </main>
+
+  <footer class="app-footer">
+    <span>Version: {{ version }}</span>
+  </footer>
 </template>
 
 <script setup>
@@ -44,6 +40,8 @@ const auth = useAuthStore()
 const localeStore = useLocaleStore()
 const router = useRouter()
 
+const version = import.meta.env.VITE_VERSION || 'unknown'
+
 auth.init()
 
 function logout() {
@@ -51,3 +49,12 @@ function logout() {
   router.push('/login')
 }
 </script>
+
+<style>
+.app-footer {
+  text-align: center;
+  color: #888;
+  font-size: 0.9em;
+  margin: 2em 0 1em 0;
+}
+</style>

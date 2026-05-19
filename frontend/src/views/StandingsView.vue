@@ -28,7 +28,7 @@
                 :key="round.id"
                 style="text-align:center"
               >
-                <router-link :to="'/rounds/' + round.id" style="color:#a7f3d0">
+                <router-link :to="'/round/' + round.id" style="color:#a7f3d0">
                   VPGA{{ round.round_number }}
                 </router-link>
                 <div style="font-weight:400;font-size:0.78rem;opacity:0.8">{{ round.date }}</div>

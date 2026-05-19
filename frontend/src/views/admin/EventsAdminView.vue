@@ -12,7 +12,7 @@
           </label>
           <label>
             {{ localeStore.t('date') }}
-            <input v-model="form.date" type="date" required />
+            <input v-model="form.date" type="date" lang="sv" required />
           </label>
           <label>
             {{ localeStore.t('duration') }}
@@ -24,7 +24,7 @@
           </label>
           <label v-if="form.duration === 'timed'">
             {{ localeStore.t('startTime') }}
-            <input v-model="form.start_time" type="time" style="width:110px" required />
+            <input v-model="form.start_time" type="time" lang="sv" style="width:110px" required />
           </label>
           <label>
             {{ localeStore.t('notes') }}
@@ -62,14 +62,14 @@
           <!-- inline edit row -->
           <tr v-else style="background:#f0f9ff">
             <td><input v-model="editForm.title" type="text" style="min-width:160px" /></td>
-            <td><input v-model="editForm.date" type="date" /></td>
+            <td><input v-model="editForm.date" type="date" lang="sv" /></td>
             <td>
               <select v-model="editForm.duration" style="width:120px">
                 <option value="1day">{{ localeStore.t('duration1Day') }}</option>
                 <option value="2days">{{ localeStore.t('duration2Days') }}</option>
                 <option value="timed">{{ localeStore.t('durationTimed') }}</option>
               </select>
-              <input v-if="editForm.duration === 'timed'" v-model="editForm.start_time" type="time" style="width:100px;margin-left:4px" required />
+              <input v-if="editForm.duration === 'timed'" v-model="editForm.start_time" type="time" lang="sv" style="width:100px;margin-left:4px" required />
             </td>
             <td><input v-model="editForm.notes" type="text" style="min-width:140px" /></td>
             <td style="white-space:nowrap">
