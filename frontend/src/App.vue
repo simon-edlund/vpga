@@ -14,13 +14,6 @@
       <router-link to="/admin/ompc">{{ localeStore.t('ompc') }}</router-link>
     </template>
     <div class="nav-right">
-      <label class="locale-picker">
-        <span>{{ localeStore.t('language') }}</span>
-        <select v-model="localeStore.locale">
-          <option value="sv">{{ localeStore.t('swedish') }}</option>
-          <option value="en">{{ localeStore.t('english') }}</option>
-        </select>
-      </label>
       <template v-if="auth.isLoggedIn">
         <span class="username">{{ auth.name }}</span>
         <router-link to="/change-password" class="small-link">{{ localeStore.t('changePassword') }}</router-link>

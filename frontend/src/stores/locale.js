@@ -1,12 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
 
 const translations = {
   sv: {
-    language: 'Språk',
-    swedish: 'Svenska',
-    english: 'Engelska',
-    standings: 'Ställning',
     rounds: 'Rundor',
     members: 'Medlemmar',
     enterScores: 'Registrera scorer',
@@ -137,6 +132,8 @@ const translations = {
     couldNotUpdateRoundDeadline: 'Kunde inte uppdatera deadline för omgången.',
     resetOmpcSeasonConfirm: 'Nollställ OMPC-säsong {season}? Detta tar bort cupen, deltagarna, matcherna och deadlines.',
   },
+<<<<<<< copilot/remove-language-selection
+=======
   en: {
     language: 'Language',
     swedish: 'Swedish',
@@ -272,6 +269,7 @@ const translations = {
     couldNotUpdateRoundDeadline: 'Could not update round deadline.',
     resetOmpcSeasonConfirm: 'Reset OMPC season {season}? This removes the cup, participants, matches, and deadlines.',
   },
+>>>>>>> main
 }
 
 function interpolate(text, params = {}) {
@@ -279,21 +277,9 @@ function interpolate(text, params = {}) {
 }
 
 export const useLocaleStore = defineStore('locale', () => {
-  const locale = ref(localStorage.getItem('locale') || 'sv')
-
-  watch(locale, value => {
-    localStorage.setItem('locale', value === 'en' ? 'en' : 'sv')
-  })
-
-  function setLocale(value) {
-    locale.value = value === 'en' ? 'en' : 'sv'
-  }
-
   function t(key, params = {}) {
-    const language = translations[locale.value] || translations.sv
-    const fallback = translations.en[key] || key
-    return interpolate(language[key] || fallback, params)
+    return interpolate(translations.sv[key] ?? key, params)
   }
 
-  return { locale, setLocale, t }
+  return { t }
 })
