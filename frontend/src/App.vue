@@ -56,14 +56,12 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth.js'
 import { useLocaleStore } from './stores/locale.js'
 
 const auth = useAuthStore()
 const localeStore = useLocaleStore()
 const router = useRouter()
-const route = useRoute()
 const mobileMenuOpen = ref(false)
 
 const version = import.meta.env.VITE_VERSION || 'unknown'
@@ -80,7 +78,7 @@ function closeMobileMenu() {
   mobileMenuOpen.value = false
 }
 
-watch(() => route.fullPath, closeMobileMenu)
+watch(() => router.currentRoute.value.fullPath, closeMobileMenu)
 </script>
 
 <style>
