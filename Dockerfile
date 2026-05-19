@@ -2,6 +2,8 @@
 
 # Stage 1: Build frontend
 FROM node:18 AS build-frontend
+ARG VPGA_VERSION=unknown
+ENV VITE_VERSION=$VPGA_VERSION
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./frontend/
 RUN cd frontend && npm install
