@@ -8,6 +8,7 @@ const translations = {
     changePassword: 'Byt lösenord',
     logout: 'Logga ut',
     seasonStandings: 'Säsongsställning',
+    standings: 'Ställning',
     season: 'Säsong',
     loading: 'Laddar...',
     noRoundsForSeason: 'Inga rundor har skapats för {season} än.',
