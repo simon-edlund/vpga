@@ -133,8 +133,6 @@ const translations = {
     couldNotUpdateRoundDeadline: 'Kunde inte uppdatera deadline för omgången.',
     resetOmpcSeasonConfirm: 'Nollställ OMPC-säsong {season}? Detta tar bort cupen, deltagarna, matcherna och deadlines.',
   },
-<<<<<<< copilot/remove-language-selection
-=======
   en: {
     language: 'Language',
     swedish: 'Swedish',
@@ -270,7 +268,6 @@ const translations = {
     couldNotUpdateRoundDeadline: 'Could not update round deadline.',
     resetOmpcSeasonConfirm: 'Reset OMPC season {season}? This removes the cup, participants, matches, and deadlines.',
   },
->>>>>>> main
 }
 
 function interpolate(text, params = {}) {
