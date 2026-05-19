@@ -2,7 +2,7 @@
   <div>
     <h2>{{ localeStore.t('enterScores') }}</h2>
 
-    <div class="controls">
+    <div class="controls score-entry-controls">
       <label>
         {{ localeStore.t('season') }}
         <select v-model.number="selectedSeason" @change="loadRounds">
@@ -22,35 +22,30 @@
 
     <template v-if="selectedRoundId && members.length > 0">
       <div class="card">
-        <p style="color:#6b7280;font-size:0.9rem;margin-bottom:1rem">
+        <p class="score-help">
           {{ localeStore.t('enterNetStrokesHelp') }}
         </p>
 
-        <table>
-          <thead>
-            <tr>
-              <th>{{ localeStore.t('player') }}</th>
-              <th style="text-align:center">{{ localeStore.t('netStrokes') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="m in members" :key="m.id">
-              <td>{{ m.name }}</td>
-              <td style="text-align:center">
-                <input
-                  v-model="scoreInputs[m.id]"
-                  type="number"
-                  min="50"
-                  max="200"
-                  :placeholder="localeStore.t('absentPlaceholder')"
-                  style="width:90px;text-align:center"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="score-entry-list">
+          <div class="score-entry-row score-entry-header">
+            <span>{{ localeStore.t('player') }}</span>
+            <span>{{ localeStore.t('netStrokes') }}</span>
+          </div>
+          <div v-for="m in members" :key="m.id" class="score-entry-row">
+            <label :for="`score-${m.id}`">{{ m.name }}</label>
+            <input
+              :id="`score-${m.id}`"
+              v-model="scoreInputs[m.id]"
+              type="number"
+              min="50"
+              max="200"
+              :placeholder="localeStore.t('absentPlaceholder')"
+              class="score-input"
+            />
+          </div>
+        </div>
 
-        <div style="margin-top:1rem;display:flex;align-items:center;gap:1rem">
+        <div class="score-actions">
           <button @click="saveScores">{{ localeStore.t('saveScores') }}</button>
           <span v-if="saved" class="success">✓ {{ localeStore.t('saved') }}</span>
         </div>
@@ -135,3 +130,99 @@ async function saveScores() {
 
 onMounted(loadSeasons)
 </script>
+
+<style scoped>
+.score-help {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.score-entry-list {
+  border: 1px solid #e4ece7;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.score-entry-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid #e9f0eb;
+  background: #fff;
+}
+
+.score-entry-row:last-child {
+  border-bottom: none;
+}
+
+.score-entry-row label {
+  min-width: 0;
+}
+
+.score-entry-header {
+  background: #1b4332;
+  color: #fff;
+  font-weight: 600;
+}
+
+.score-entry-header span:last-child {
+  text-align: center;
+}
+
+.score-input {
+  width: 100%;
+  text-align: center;
+}
+
+.score-actions {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 700px) {
+  .score-entry-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .score-entry-controls label {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .score-entry-controls select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .score-entry-header {
+    display: none;
+  }
+
+  .score-entry-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .score-input {
+    text-align: left;
+  }
+
+  .score-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .score-actions button {
+    width: 100%;
+  }
+}
+</style>
