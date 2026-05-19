@@ -265,6 +265,7 @@ function roundLabel(roundNumber, totalRounds, matchCount) {
   if (stageSize === 2) return localeStore.t('final')
   if (stageSize === 4) return localeStore.t('semifinals')
   if (stageSize === 8) return localeStore.t('quarterfinals')
+  if (stageSize === 16) return localeStore.t('roundOf16')
   return localeStore.t('roundOf', { size: stageSize })
 }
 
