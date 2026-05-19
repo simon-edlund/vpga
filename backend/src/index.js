@@ -32,15 +32,23 @@ app.use('/api/calendar', require('./routes/calendar'))
 app.use('/api/ompc',     require('./routes/ompc'))
 
 // Serve Vue SPA in production
+
+let staticFilesPath = null;
 if (isProd) {
-	const distDir = path.join(__dirname, '../public')
-	app.use(express.static(distDir))
+	staticFilesPath = path.join(__dirname, '../public');
+	app.use(express.static(staticFilesPath));
 	app.get('*', (req, res) => {
-		res.sendFile(path.join(distDir, 'index.html'))
-	})
+		res.sendFile(path.join(staticFilesPath, 'index.html'));
+	});
 }
 
 app.listen(PORT, () => {
-	console.log(`[${new Date().toISOString()}] VPGA backend running on http://localhost:${PORT}`)
-	console.log(`[${new Date().toISOString()}] SQLite database: ${db.__dbPath}`)
-})
+	const version = process.env.VITE_VERSION || 'unknown';
+	console.log(`[${new Date().toISOString()}] VPGA backend running on http://localhost:${PORT}`);
+	console.log(`[${new Date().toISOString()}] SQLite database: ${db.__dbPath}`);
+	console.log(`[${new Date().toISOString()}] NODE_ENV: ${process.env.NODE_ENV}`);
+	if (staticFilesPath) {
+		console.log(`[${new Date().toISOString()}] Serving static files from: ${staticFilesPath}`);
+	}
+	console.log(`[${new Date().toISOString()}] Version: ${version}`);
+});

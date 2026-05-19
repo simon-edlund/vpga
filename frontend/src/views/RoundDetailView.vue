@@ -1,6 +1,6 @@
 <template>
   <div>
-    <router-link to="/rounds" class="back-link">← {{ localeStore.t('backToRounds') }}</router-link>
+    <router-link to="/" class="back-link">← {{ localeStore.t('backToStandings') }}</router-link>
 
     <div v-if="round">
       <h2>VPGA{{ round.round_number }} &mdash; {{ round.date }}</h2>
