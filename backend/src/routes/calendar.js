@@ -130,8 +130,8 @@ router.get('/:lang(vpga.ics|sv/vpga.ics|en/vpga.ics)', (req, res) => {
   const roundItems = rounds.map(r => ({
     ...r,
     title: lang === 'sv'
-      ? `VPGA Runda ${r.round_number}${r.course ? ' – ' + r.course : ''}`
-      : `VPGA Round ${r.round_number}${r.course ? ' – ' + r.course : ''}`,
+      ? `VPGA${r.round_number}${r.course ? ' – ' + r.course : ''}`
+      : `VPGA${r.round_number}${r.course ? ' – ' + r.course : ''}`,
     uid:   `vpga-round-${r.id}@vpga`,
   }))
 
@@ -183,7 +183,7 @@ router.get('/all', (req, res) => {
       'SELECT id, season, round_number, date, date_end, start_time, course, notes FROM rounds ORDER BY season, round_number'
     ).all().map(r => ({
       id: 'round-' + r.id,
-      title: 'VPGA Runda ' + r.round_number + (r.course ? ' - ' + r.course : ''),
+      title: 'VPGA' + r.round_number + (r.course ? ' - ' + r.course : ''),
       date: r.date,
       date_end: r.date_end || '',
       start_time: r.start_time || '',
