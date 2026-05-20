@@ -16,7 +16,6 @@
     <div class="nav-content" :class="{ open: mobileMenuOpen }">
       <template v-if="auth.isLoggedIn">
         <router-link to="/" @click="closeMobileMenu">{{ localeStore.t('standings') }}</router-link>
-        <router-link to="/rounds" @click="closeMobileMenu">{{ localeStore.t('rounds') }}</router-link>
         <router-link to="/ompc" @click="closeMobileMenu">{{ localeStore.t('ompc') }}</router-link>
         <router-link to="/calendar" @click="closeMobileMenu">{{ localeStore.t('calendar') }}</router-link>
       </template>
@@ -28,13 +27,6 @@
         <router-link to="/admin/ompc" @click="closeMobileMenu">{{ localeStore.t('ompc') }}</router-link>
       </template>
       <div class="nav-right">
-        <label class="locale-picker">
-          <span>{{ localeStore.t('language') }}</span>
-          <select v-model="localeStore.locale">
-            <option value="sv">{{ localeStore.t('swedish') }}</option>
-            <option value="en">{{ localeStore.t('english') }}</option>
-          </select>
-        </label>
         <template v-if="auth.isLoggedIn">
           <span class="username">{{ auth.name }}</span>
           <router-link to="/change-password" class="small-link" @click="closeMobileMenu">{{ localeStore.t('changePassword') }}</router-link>
