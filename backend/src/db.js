@@ -252,6 +252,8 @@ addColumnIfMissing('members', 'email', "TEXT NOT NULL DEFAULT ''")
 addColumnIfMissing('members', 'is_admin', 'INTEGER NOT NULL DEFAULT 0')
 addColumnIfMissing('members', 'password_hash', 'TEXT')
 addColumnIfMissing('members', 'email_verified', 'INTEGER NOT NULL DEFAULT 0')
+addColumnIfMissing('members', 'hcp_last_updated_at', 'TEXT')
+addColumnIfMissing('members', 'hcp_last_update_status', 'TEXT')
 addColumnIfMissing('ompc_matches', 'match_number', 'INTEGER NOT NULL DEFAULT 1')
 
 recreateOmpcParticipantsIfNeeded()

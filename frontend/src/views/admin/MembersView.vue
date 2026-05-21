@@ -25,6 +25,10 @@
       </form>
     </div>
 
+    <div style="margin-bottom:0.75rem">
+      <button class="sm secondary" @click="updateAllHcp">{{ localeStore.t('hcpUpdateAll') }}</button>
+    </div>
+
     <table>
       <thead>
         <tr>
@@ -35,6 +39,7 @@
           <th style="text-align:center">{{ localeStore.t('admin') }}</th>
           <th style="text-align:center">{{ localeStore.t('verified') }}</th>
           <th style="text-align:center">{{ localeStore.t('active') }}</th>
+          <th style="text-align:center" :title="localeStore.t('hcpStatus')">HCP</th>
           <th></th>
         </tr>
       </thead>
@@ -73,6 +78,12 @@
               @change="editingId === m.id && (editMember.active = $event.target.checked)"
             />
           </td>
+          <td style="text-align:center">
+            <span
+              :title="hcpStatusTitle(m)"
+              style="cursor:default;font-size:1.1em"
+            >{{ hcpStatusIcon(m) }}</span>
+          </td>
           <td style="display:flex;gap:0.5rem">
             <template v-if="editingId === m.id">
               <button class="sm" @click="saveMember(m)">{{ localeStore.t('save') }}</button>
@@ -81,6 +92,7 @@
             <template v-else>
               <button class="sm" @click="startEdit(m)">{{ localeStore.t('edit') }}</button>
               <button class="sm secondary" @click="resetLogin(m)">{{ localeStore.t('resetLogin') }}</button>
+              <button class="sm secondary" :disabled="updatingHcp.has(m.id)" @click="updateHcp(m)">{{ localeStore.t('hcpUpdate') }}</button>
               <button class="sm danger" @click="deleteMember(m)">{{ localeStore.t('delete') }}</button>
             </template>
           </td>
@@ -91,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import api from '../../api/index.js'
 import { useLocaleStore } from '../../stores/locale.js'
 
@@ -102,7 +114,16 @@ const newHandicap = ref(0)
 const newEmail = ref('')
 const editingId = ref(null)
 const editMember = ref(null)
+const updatingHcp = ref(new Set())
 const localeStore = useLocaleStore()
+let hcpPollInterval = null
+
+onBeforeUnmount(() => {
+  if (hcpPollInterval) {
+    clearInterval(hcpPollInterval)
+    hcpPollInterval = null
+  }
+})
 
 async function load() {
   const res = await api.get('/api/members')
@@ -152,6 +173,53 @@ async function resetLogin(m) {
   if (!confirm(localeStore.t('resetLoginConfirm', { name: m.name }))) return
   await api.post(`/api/members/${m.id}/reset-login`)
   load()
+}
+
+async function updateHcp(m) {
+  updatingHcp.value = new Set([...updatingHcp.value, m.id])
+  try {
+    const res = await api.post(`/api/members/${m.id}/update-hcp`)
+    members.value = members.value.map(x => x.id === m.id ? res.data : x)
+  } catch (_) {
+    load()
+  } finally {
+    const s = new Set(updatingHcp.value)
+    s.delete(m.id)
+    updatingHcp.value = s
+  }
+}
+
+async function updateAllHcp() {
+  if (!confirm(localeStore.t('hcpUpdateAllConfirm'))) return
+  await api.post('/api/members/update-hcp-all')
+  // Poll for updated statuses since the update runs in the background
+  if (hcpPollInterval) clearInterval(hcpPollInterval)
+  let attempts = 0
+  const maxAttempts = 12
+  hcpPollInterval = setInterval(async () => {
+    attempts++
+    await load()
+    if (attempts >= maxAttempts) {
+      clearInterval(hcpPollInterval)
+      hcpPollInterval = null
+    }
+  }, 5000)
+}
+
+function hcpStatusIcon(m) {
+  if (!m.hcp_last_update_status) return '—'
+  if (m.hcp_last_update_status === 'ok') return '✅'
+  return '❌'
+}
+
+function hcpStatusTitle(m) {
+  if (!m.hcp_last_update_status) return localeStore.t('hcpStatusNever')
+  const label = m.hcp_last_update_status === 'ok'
+    ? localeStore.t('hcpStatusOk')
+    : localeStore.t('hcpStatusError')
+  return m.hcp_last_updated_at
+    ? `${label} – ${new Date(m.hcp_last_updated_at).toLocaleString()}`
+    : label
 }
 
 onMounted(load)
