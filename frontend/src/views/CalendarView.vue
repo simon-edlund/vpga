@@ -20,7 +20,7 @@
             </label>
             <label>
               {{ localeStore.t('date') }}
-              <input v-model="form.date" type="date" lang="sv" required />
+              <IsoDateField v-model="form.date" required />
             </label>
             <label>
               {{ localeStore.t('duration') }}
@@ -32,7 +32,7 @@
             </label>
             <label v-if="form.duration === 'timed'">
               {{ localeStore.t('startTime') }}
-              <input v-model="form.start_time" type="time" lang="sv" style="width:110px" required />
+              <IsoTimeField v-model="form.start_time" required />
             </label>
             <label>
               {{ localeStore.t('notes') }}
@@ -83,6 +83,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../api/index.js'
+import IsoDateField from '../components/IsoDateField.vue'
+import IsoTimeField from '../components/IsoTimeField.vue'
 import { useLocaleStore } from '../stores/locale.js'
 import { useAuthStore } from '../stores/auth.js'
 import { deriveDuration, formatDuration, buildDurationPayload } from '../utils/duration.js'
