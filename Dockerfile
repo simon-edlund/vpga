@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.4
 # Multi-stage Dockerfile for combining frontend and backend
 
 # Stage 1: Build frontend
@@ -21,6 +22,8 @@ ENV VITE_VERSION=$VITE_VERSION
 COPY backend/package.json backend/package-lock.json ./backend/
 RUN cd backend && npm install
 COPY backend ./backend
+RUN --mount=type=bind,source=production.env,target=/tmp/production.env,required=false \
+    if [ -f /tmp/production.env ]; then cp /tmp/production.env ./backend/production.env; fi
 COPY --from=build-frontend /app/frontend/dist ./backend/public
 
 # Start backend (serving frontend as static files)
