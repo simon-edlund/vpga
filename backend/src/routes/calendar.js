@@ -55,7 +55,7 @@ function getIcsCutoffDate(now = new Date()) {
 
 function shouldIncludeIcsItem(item, cutoffDate) {
   const endDate = normalizeIsoDate(item.date_end && item.date_end.trim() !== '' ? item.date_end : item.date)
-  return !!endDate && endDate >= normalizeIsoDate(cutoffDate)
+  return !!endDate && endDate >= cutoffDate
 }
 
 function foldLine(line) {
@@ -297,4 +297,3 @@ router.get('/all', (req, res) => {
 })
 
 module.exports = router
-module.exports.buildIcs = buildIcs
