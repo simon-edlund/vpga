@@ -48,7 +48,7 @@ function validateIsoDate(dateStr) {
 }
 
 function getIcsCutoffDate(now = new Date()) {
-  const cutoff = new Date(now)
+  const cutoff = new Date(now instanceof Date ? now.getTime() : now)
   cutoff.setHours(SAFE_LOCAL_HOUR, 0, 0, 0)
   cutoff.setFullYear(cutoff.getFullYear() - 1)
   return toIsoDateString(cutoff)
@@ -61,7 +61,8 @@ function getEffectiveEndDate(item) {
 
 function shouldIncludeIcsItem(item, cutoffDate) {
   const endDate = validateIsoDate(getEffectiveEndDate(item))
-  return !!endDate && endDate >= cutoffDate
+  const validCutoffDate = validateIsoDate(cutoffDate)
+  return !!endDate && !!validCutoffDate && endDate >= validCutoffDate
 }
 
 function foldLine(line) {
