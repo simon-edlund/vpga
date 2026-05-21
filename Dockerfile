@@ -23,7 +23,7 @@ COPY backend/package.json backend/package-lock.json ./backend/
 RUN cd backend && npm install
 COPY backend ./backend
 RUN --mount=type=bind,source=production.env,target=/tmp/production.env,required=false \
-    if [ -f /tmp/production.env ]; then cp /tmp/production.env ./backend/production.env; fi
+    if [ -f /tmp/production.env ]; then cp /tmp/production.env ./backend/.env; fi
 COPY --from=build-frontend /app/frontend/dist ./backend/public
 
 # Start backend (serving frontend as static files)
