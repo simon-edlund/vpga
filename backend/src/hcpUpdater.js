@@ -1,13 +1,13 @@
 require('dotenv').config()
 const axios = require('axios')
+const { CookieJar } = require('tough-cookie')
+const { wrapper } = require('axios-cookiejar-support')
 const db = require('./db')
 
 const MINGOLF_USERNAME = process.env.MINGOLF_USERNAME
 const MINGOLF_PASSWORD = process.env.MINGOLF_PASSWORD
 
-async function createClient() {
-  const { CookieJar } = await import('tough-cookie')
-  const { wrapper } = await import('axios-cookiejar-support')
+function createClient() {
   const jar = new CookieJar()
   return wrapper(axios.create({ jar }))
 }
@@ -84,7 +84,7 @@ async function updateMemberHcp(memberId) {
     throw new Error('MINGOLF credentials not configured')
   }
 
-  const client = await createClient()
+  const client = createClient()
   try {
     await loginMinGolf(client)
     const hcp = await fetchHcp(client, member.golf_id.trim())
@@ -124,7 +124,7 @@ async function updateAllMembersHcp() {
 
   console.log(`[${new Date().toISOString()}] HCP update started for ${members.length} member(s)`)
 
-  const client = await createClient()
+  const client = createClient()
   try {
     await loginMinGolf(client)
     console.log(`[${new Date().toISOString()}] HCP update: logged in to MinGolf`)
