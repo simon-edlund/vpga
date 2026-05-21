@@ -6,6 +6,11 @@ const db = require('./db')
 
 const MINGOLF_USERNAME = process.env.MINGOLF_USERNAME
 const MINGOLF_PASSWORD = process.env.MINGOLF_PASSWORD
+const GOLF_ID_REGEX = /^\d{6}-\d{3}$/
+
+function isValidGolfId(golfId) {
+  return typeof golfId === 'string' && GOLF_ID_REGEX.test(golfId.trim())
+}
 
 function createClient() {
   const jar = new CookieJar()
@@ -65,12 +70,12 @@ const MEMBER_COLS = 'id, name, golf_id, handicap, email, active, is_admin, email
  * Returns the updated member row.
  */
 async function updateMemberHcp(memberId) {
-  const member = db.prepare('SELECT id, golf_id FROM members WHERE id = ?').get(memberId)
+  const member = db.prepare('SELECT id, golf_id, active FROM members WHERE id = ?').get(memberId)
   if (!member) throw new Error('Member not found')
 
   const now = new Date().toISOString()
 
-  if (!member.golf_id || !member.golf_id.trim()) {
+  if (!member.active || !isValidGolfId(member.golf_id)) {
     db.prepare(
       "UPDATE members SET hcp_last_updated_at = ?, hcp_last_update_status = 'error' WHERE id = ?"
     ).run(now, memberId)
@@ -117,6 +122,7 @@ async function updateAllMembersHcp() {
   const members = db
     .prepare("SELECT id, golf_id FROM members WHERE active = 1 AND golf_id != ''")
     .all()
+    .filter(m => isValidGolfId(m.golf_id))
 
   if (members.length === 0) {
     console.log(`[${new Date().toISOString()}] HCP update: no active members with a golf ID found`)
