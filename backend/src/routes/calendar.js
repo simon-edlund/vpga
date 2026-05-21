@@ -35,6 +35,25 @@ function addDays(dateStr, n) {
   return `${yy}${mo}${dd}`
 }
 
+function localDate(date) {
+  const yy = date.getFullYear()
+  const mo = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yy}-${mo}-${dd}`
+}
+
+function getIcsCutoffDate(now = new Date()) {
+  const cutoff = new Date(now)
+  cutoff.setHours(12, 0, 0, 0)
+  cutoff.setFullYear(cutoff.getFullYear() - 1)
+  return localDate(cutoff)
+}
+
+function shouldIncludeIcsItem(item, cutoffDate) {
+  const endDate = item.date_end && item.date_end.trim() !== '' ? item.date_end : item.date
+  return !!endDate && endDate >= cutoffDate
+}
+
 function foldLine(line) {
   // iCal lines must be at most 75 octets; fold longer lines
   const bytes = Buffer.from(line, 'utf8')
@@ -49,8 +68,9 @@ function foldLine(line) {
   return chunks.join('\r\n ')
 }
 
-function buildIcs(items) {
-  const now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
+function buildIcs(items, currentDate = new Date()) {
+  const now = currentDate.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
+  const cutoffDate = getIcsCutoffDate(currentDate)
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -81,6 +101,8 @@ function buildIcs(items) {
   ]
 
   for (const item of items) {
+    if (!shouldIncludeIcsItem(item, cutoffDate)) continue
+
     const uid      = item.uid
     const summary  = item.title
     const location = item.course || ''
@@ -271,3 +293,4 @@ router.get('/all', (req, res) => {
 })
 
 module.exports = router
+module.exports.buildIcs = buildIcs
