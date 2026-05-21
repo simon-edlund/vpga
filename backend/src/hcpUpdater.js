@@ -32,10 +32,21 @@ async function fetchHcp(client, golfId) {
     throw new Error(`Unexpected status code: ${response.status}`)
   }
   const data = response.data
-  if (data == null || data.hcp === undefined) {
-    throw new Error(`No HCP data returned for golf ID: ${golfId}`)
+
+  // Handle array responses (multiple matches)
+  const record = Array.isArray(data) ? data[0] : data
+
+  if (record == null || typeof record !== 'object') {
+    throw new Error(`No data returned for golf ID: ${golfId}`)
   }
-  return Number(data.hcp)
+  if (!('hcp' in record)) {
+    throw new Error(`HCP field missing in response for golf ID: ${golfId}`)
+  }
+  const hcp = Number(record.hcp)
+  if (!Number.isFinite(hcp)) {
+    throw new Error(`Invalid HCP value "${record.hcp}" for golf ID: ${golfId}`)
+  }
+  return hcp
 }
 
 async function logoutMinGolf(client) {

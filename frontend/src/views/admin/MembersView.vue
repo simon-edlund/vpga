@@ -184,7 +184,14 @@ async function updateHcp(m) {
 async function updateAllHcp() {
   if (!confirm(localeStore.t('hcpUpdateAllConfirm'))) return
   await api.post('/api/members/update-hcp-all')
-  setTimeout(load, 5000)
+  // Poll for updated statuses since the update runs in the background
+  let attempts = 0
+  const maxAttempts = 12
+  const interval = setInterval(async () => {
+    attempts++
+    await load()
+    if (attempts >= maxAttempts) clearInterval(interval)
+  }, 5000)
 }
 
 function hcpStatusIcon(m) {
