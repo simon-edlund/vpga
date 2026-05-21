@@ -2,6 +2,7 @@ const router = require('express').Router()
 const db = require('../db')
 
 // ── iCal helpers ──────────────────────────────────────────────────────────────
+const SAFE_LOCAL_HOUR = 12
 
 function icalDate(dateStr) {
   // dateStr: 'YYYY-MM-DD' → 'YYYYMMDD'
@@ -27,12 +28,42 @@ function addHours(dateStr, timeStr, hours) {
 }
 
 function addDays(dateStr, n) {
-  const d = new Date(`${dateStr}T12:00:00`)
+  const d = new Date(`${dateStr}T${String(SAFE_LOCAL_HOUR).padStart(2, '0')}:00:00`)
   d.setDate(d.getDate() + n)
   const yy = d.getFullYear()
   const mo = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
   return `${yy}${mo}${dd}`
+}
+
+function toIsoDateString(date) {
+  const yy = date.getFullYear()
+  const mo = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yy}-${mo}-${dd}`
+}
+
+function validateIsoDate(dateStr) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateStr || '') ? dateStr : ''
+}
+
+function getIcsCutoffDate(now = new Date()) {
+  const cutoff = new Date(now.getTime())
+  cutoff.setHours(SAFE_LOCAL_HOUR, 0, 0, 0)
+  cutoff.setFullYear(cutoff.getFullYear() - 1)
+  return toIsoDateString(cutoff)
+}
+
+function getEffectiveEndDate(item) {
+  const dateEnd = typeof item.date_end === 'string' ? item.date_end.trim() : ''
+  const date = typeof item.date === 'string' ? item.date : ''
+  return dateEnd !== '' ? dateEnd : date
+}
+
+function shouldIncludeIcsItem(item, cutoffDate) {
+  const endDate = validateIsoDate(getEffectiveEndDate(item))
+  const validCutoffDate = validateIsoDate(cutoffDate)
+  return !!endDate && !!validCutoffDate && endDate >= validCutoffDate
 }
 
 function foldLine(line) {
@@ -49,8 +80,9 @@ function foldLine(line) {
   return chunks.join('\r\n ')
 }
 
-function buildIcs(items) {
-  const now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
+function buildIcs(items, currentDate = new Date()) {
+  const now = currentDate.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
+  const cutoffDate = getIcsCutoffDate(currentDate)
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -81,6 +113,8 @@ function buildIcs(items) {
   ]
 
   for (const item of items) {
+    if (!shouldIncludeIcsItem(item, cutoffDate)) continue
+
     const uid      = item.uid
     const summary  = item.title
     const location = item.course || ''
