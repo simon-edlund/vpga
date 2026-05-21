@@ -42,7 +42,7 @@ function toIsoDateString(date) {
   return `${yy}-${mo}-${dd}`
 }
 
-function normalizeIsoDate(dateStr) {
+function validateIsoDate(dateStr) {
   return /^\d{4}-\d{2}-\d{2}$/.test(dateStr || '') ? dateStr : ''
 }
 
@@ -53,8 +53,12 @@ function getIcsCutoffDate(now = new Date()) {
   return toIsoDateString(cutoff)
 }
 
+function getEffectiveEndDate(item) {
+  return item.date_end && item.date_end.trim() !== '' ? item.date_end : item.date
+}
+
 function shouldIncludeIcsItem(item, cutoffDate) {
-  const endDate = normalizeIsoDate(item.date_end && item.date_end.trim() !== '' ? item.date_end : item.date)
+  const endDate = validateIsoDate(getEffectiveEndDate(item))
   return !!endDate && endDate >= cutoffDate
 }
 
