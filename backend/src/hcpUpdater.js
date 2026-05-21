@@ -42,7 +42,7 @@ async function fetchHcp(client, golfId) {
   if (!('hcp' in record)) {
     throw new Error(`HCP field missing in response for golf ID: ${golfId}`)
   }
-  const rawHcp = typeof record.hcp === 'string' ? record.hcp.replace(',', '.') : record.hcp
+  const rawHcp = typeof record.hcp === 'string' ? record.hcp.replace(/,/g, '.') : record.hcp
   const hcp = Number(rawHcp)
   if (!Number.isFinite(hcp)) {
     throw new Error(`Invalid HCP value "${record.hcp}" for golf ID: ${golfId}`)
