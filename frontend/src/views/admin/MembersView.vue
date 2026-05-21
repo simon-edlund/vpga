@@ -103,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import api from '../../api/index.js'
 import { useLocaleStore } from '../../stores/locale.js'
 
@@ -116,6 +116,14 @@ const editingId = ref(null)
 const editMember = ref(null)
 const updatingHcp = ref(new Set())
 const localeStore = useLocaleStore()
+let hcpPollInterval = null
+
+onBeforeUnmount(() => {
+  if (hcpPollInterval) {
+    clearInterval(hcpPollInterval)
+    hcpPollInterval = null
+  }
+})
 
 async function load() {
   const res = await api.get('/api/members')
@@ -185,12 +193,16 @@ async function updateAllHcp() {
   if (!confirm(localeStore.t('hcpUpdateAllConfirm'))) return
   await api.post('/api/members/update-hcp-all')
   // Poll for updated statuses since the update runs in the background
+  if (hcpPollInterval) clearInterval(hcpPollInterval)
   let attempts = 0
   const maxAttempts = 12
-  const interval = setInterval(async () => {
+  hcpPollInterval = setInterval(async () => {
     attempts++
     await load()
-    if (attempts >= maxAttempts) clearInterval(interval)
+    if (attempts >= maxAttempts) {
+      clearInterval(hcpPollInterval)
+      hcpPollInterval = null
+    }
   }, 5000)
 }
 
