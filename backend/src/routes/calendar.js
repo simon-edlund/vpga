@@ -35,23 +35,27 @@ function addDays(dateStr, n) {
   return `${yy}${mo}${dd}`
 }
 
-function localDate(date) {
+function toIsoDateString(date) {
   const yy = date.getFullYear()
   const mo = String(date.getMonth() + 1).padStart(2, '0')
   const dd = String(date.getDate()).padStart(2, '0')
   return `${yy}-${mo}-${dd}`
 }
 
+function normalizeIsoDate(dateStr) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateStr || '') ? dateStr : ''
+}
+
 function getIcsCutoffDate(now = new Date()) {
   const cutoff = new Date(now)
   cutoff.setHours(12, 0, 0, 0)
   cutoff.setFullYear(cutoff.getFullYear() - 1)
-  return localDate(cutoff)
+  return toIsoDateString(cutoff)
 }
 
 function shouldIncludeIcsItem(item, cutoffDate) {
-  const endDate = item.date_end && item.date_end.trim() !== '' ? item.date_end : item.date
-  return !!endDate && endDate >= cutoffDate
+  const endDate = normalizeIsoDate(item.date_end && item.date_end.trim() !== '' ? item.date_end : item.date)
+  return !!endDate && endDate >= normalizeIsoDate(cutoffDate)
 }
 
 function foldLine(line) {
