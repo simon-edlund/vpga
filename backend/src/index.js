@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const path = require('path')
 const db = require('./db')
+const { startScheduler } = require('./scheduler')
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -51,4 +52,5 @@ app.listen(PORT, () => {
 		console.log(`[${new Date().toISOString()}] Serving static files from: ${staticFilesPath}`);
 	}
 	console.log(`[${new Date().toISOString()}] Version: ${version}`);
+	startScheduler();
 });
