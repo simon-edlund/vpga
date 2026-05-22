@@ -79,7 +79,7 @@
                   <div class="deadline-box">
                     <label>
                       {{ localeStore.t('deadline') }}
-                      <input v-model="deadlineDrafts[round.roundNumber]" type="date" lang="sv" />
+                      <IsoDateField v-model="deadlineDrafts[round.roundNumber]" />
                     </label>
                     <button class="sm secondary" @click="saveRoundDeadline(round.roundNumber)">{{ localeStore.t('save') }}</button>
                   </div>
@@ -160,6 +160,7 @@ import api, {
   updateOMPCMatchSlot,
   updateOMPCRoundDeadline,
 } from '../../api/index.js'
+import IsoDateField from '../../components/IsoDateField.vue'
 import { useAuthStore } from '../../stores/auth.js'
 import { useLocaleStore } from '../../stores/locale.js'
 
