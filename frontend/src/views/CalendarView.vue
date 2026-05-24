@@ -20,7 +20,7 @@
             </label>
             <label>
               {{ localeStore.t('date') }}
-              <input v-model="form.date" type="date" lang="sv" required />
+              <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input required style="width:160px;display:inline-block" />
             </label>
             <label>
               {{ localeStore.t('duration') }}
@@ -32,7 +32,7 @@
             </label>
             <label v-if="form.duration === 'timed'">
               {{ localeStore.t('startTime') }}
-              <input v-model="form.start_time" type="time" lang="sv" style="width:110px" required />
+              <VueDatePicker v-model="form.start_time" model-type="HH:mm" time-picker :is24="true" auto-apply text-input required style="width:110px;display:inline-block" />
             </label>
             <label>
               {{ localeStore.t('notes') }}
