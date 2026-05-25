@@ -70,7 +70,7 @@
             <td>{{ r.date }}</td>
             <td>{{ fmt(r) }}</td>
             <td>{{ r.course }}</td>
-            <td style="color:#6b7280;font-size:0.88rem">{{ r.description || r.notes }}</td>
+            <td style="color:#6b7280;font-size:0.88rem">{{ r.description }}</td>
             <td style="color:#6b7280;font-size:0.88rem">{{ r.notes }}</td>
             <td style="white-space:nowrap">
               <button class="sm" @click="startEdit(r)" style="margin-right:4px">{{ localeStore.t('edit') }}</button>
@@ -158,7 +158,6 @@ async function addRound() {
     form.value.start_time = ''
     form.value.course = ''
     form.value.description = ''
-    form.value.notes = ''
     load()
   } catch (e) {
     addError.value = e.response?.data?.error || localeStore.t('errorAddingRound')
@@ -180,7 +179,7 @@ function startEdit(r) {
     duration:     deriveDuration(r),
     start_time:   r.start_time || '',
     course:       r.course,
-    description:  r.description || r.notes || '',
+    description:  r.description || '',
     notes:        r.notes || '',
   }
 }

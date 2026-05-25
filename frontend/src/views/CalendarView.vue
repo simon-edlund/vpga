@@ -63,7 +63,7 @@
             <td>{{ ev.title }}</td>
             <td>{{ ev.date }}</td>
             <td>{{ fmt(ev) }}</td>
-            <td style="color:#6b7280;font-size:0.88rem">{{ ev.description }}</td>
+            <td style="color:#6b7280;font-size:0.88rem">{{ ev.description || ev.notes }}</td>
             <td v-if="auth.isAdmin">
               <template v-if="ev.type === 'manual'">
                 <button @click="startEdit(ev)" style="margin-right:0.5em">{{ localeStore.t('edit') }}</button>
