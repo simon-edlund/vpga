@@ -234,6 +234,7 @@ function recreateOmpcMatchesIfNeeded() {
 
 addColumnIfMissing('rounds', 'date_end',    "TEXT NOT NULL DEFAULT ''")
 addColumnIfMissing('rounds', 'start_time',  "TEXT NOT NULL DEFAULT ''")
+addColumnIfMissing('rounds', 'description', "TEXT NOT NULL DEFAULT ''")
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS events (
@@ -242,9 +243,12 @@ db.exec(`
     date       TEXT NOT NULL,
     date_end   TEXT NOT NULL DEFAULT '',
     start_time TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
     notes      TEXT NOT NULL DEFAULT ''
   );
 `)
+
+addColumnIfMissing('events', 'description', "TEXT NOT NULL DEFAULT ''")
 
 addColumnIfMissing('members', 'golf_id', "TEXT NOT NULL DEFAULT ''")
 addColumnIfMissing('members', 'handicap', 'REAL NOT NULL DEFAULT 0')

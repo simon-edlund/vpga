@@ -27,8 +27,8 @@
             <input v-model="form.start_time" type="time" lang="sv" style="width:110px" required />
           </label>
           <label>
-            {{ localeStore.t('notes') }}
-            <input v-model="form.notes" type="text" style="min-width:200px" />
+            {{ localeStore.t('description') }}
+            <input v-model="form.description" type="text" style="min-width:200px" />
           </label>
         </div>
         <p v-if="addError" class="error">{{ addError }}</p>
@@ -42,7 +42,7 @@
           <th>{{ localeStore.t('eventTitle') }}</th>
           <th>{{ localeStore.t('date') }}</th>
           <th>{{ localeStore.t('duration') }}</th>
-          <th>{{ localeStore.t('notes') }}</th>
+          <th>{{ localeStore.t('description') }}</th>
           <th></th>
         </tr>
       </thead>
@@ -53,7 +53,7 @@
             <td>{{ ev.title }}</td>
             <td>{{ ev.date }}</td>
             <td>{{ fmt(ev) }}</td>
-            <td style="color:#6b7280;font-size:0.88rem">{{ ev.notes }}</td>
+            <td style="color:#6b7280;font-size:0.88rem">{{ ev.description || ev.notes }}</td>
             <td style="white-space:nowrap">
               <button class="sm" @click="startEdit(ev)" style="margin-right:4px">{{ localeStore.t('edit') }}</button>
               <button class="sm danger" @click="deleteEvent(ev)">{{ localeStore.t('delete') }}</button>
@@ -71,7 +71,7 @@
               </select>
               <input v-if="editForm.duration === 'timed'" v-model="editForm.start_time" type="time" lang="sv" style="width:100px;margin-left:4px" required />
             </td>
-            <td><input v-model="editForm.notes" type="text" style="min-width:140px" /></td>
+            <td><input v-model="editForm.description" type="text" style="min-width:140px" /></td>
             <td style="white-space:nowrap">
               <button class="sm" @click="saveEdit" style="margin-right:4px">{{ localeStore.t('save') }}</button>
               <button class="sm" @click="editingId = null">{{ localeStore.t('cancel') }}</button>
@@ -102,14 +102,14 @@ const form = ref({
   date:       '',
   duration:   '1day',
   start_time: '',
-  notes:      '',
+  description:'',
 })
 
 function buildPayload(formData) {
   return {
     title:      formData.title,
     date:       formData.date,
-    notes:      formData.notes,
+    description: formData.description,
     ...buildDurationPayload(formData),
   }
 }
@@ -125,7 +125,7 @@ async function addEvent() {
   addError.value = ''
   try {
     await api.post('/api/events', buildPayload(form.value))
-    form.value = { title: '', date: '', duration: '1day', start_time: '', notes: '' }
+    form.value = { title: '', date: '', duration: '1day', start_time: '', description: '' }
     load()
   } catch (e) {
     addError.value = e.response?.data?.error || localeStore.t('errorAddingEvent')
@@ -145,7 +145,7 @@ function startEdit(ev) {
     date:       ev.date,
     duration:   deriveDuration(ev),
     start_time: ev.start_time || '',
-    notes:      ev.notes || '',
+    description: ev.description || ev.notes || '',
   }
 }
 

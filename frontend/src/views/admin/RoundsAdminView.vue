@@ -35,6 +35,10 @@
             <input v-model="form.course" type="text" required style="min-width:180px" />
           </label>
           <label>
+            {{ localeStore.t('description') }}
+            <input v-model="form.description" type="text" style="min-width:180px" />
+          </label>
+          <label>
             {{ localeStore.t('notes') }}
             <input v-model="form.notes" type="text" style="min-width:180px" />
           </label>
@@ -52,6 +56,7 @@
           <th>{{ localeStore.t('date') }}</th>
           <th>{{ localeStore.t('duration') }}</th>
           <th>{{ localeStore.t('course') }}</th>
+          <th>{{ localeStore.t('description') }}</th>
           <th>{{ localeStore.t('notes') }}</th>
           <th></th>
         </tr>
@@ -65,6 +70,7 @@
             <td>{{ r.date }}</td>
             <td>{{ fmt(r) }}</td>
             <td>{{ r.course }}</td>
+            <td style="color:#6b7280;font-size:0.88rem">{{ r.description || r.notes }}</td>
             <td style="color:#6b7280;font-size:0.88rem">{{ r.notes }}</td>
             <td style="white-space:nowrap">
               <button class="sm" @click="startEdit(r)" style="margin-right:4px">{{ localeStore.t('edit') }}</button>
@@ -85,6 +91,7 @@
               <input v-if="editForm.duration === 'timed'" v-model="editForm.start_time" type="time" lang="sv" style="width:100px;margin-left:4px" required />
             </td>
             <td><input v-model="editForm.course" type="text" style="min-width:130px" /></td>
+            <td><input v-model="editForm.description" type="text" style="min-width:130px" /></td>
             <td><input v-model="editForm.notes" type="text" style="min-width:130px" /></td>
             <td style="white-space:nowrap">
               <button class="sm" @click="saveEdit" style="margin-right:4px">{{ localeStore.t('save') }}</button>
@@ -93,7 +100,7 @@
           </tr>
         </template>
         <tr v-if="rounds.length === 0">
-          <td colspan="7" style="color:#9ca3af;text-align:center">{{ localeStore.t('noRoundsYet') }}</td>
+          <td colspan="8" style="color:#9ca3af;text-align:center">{{ localeStore.t('noRoundsYet') }}</td>
         </tr>
       </tbody>
     </table>
@@ -118,6 +125,7 @@ const form     = ref({
   duration:     '1day',
   start_time:   '',
   course:       '',
+  description:  '',
   notes:        '',
 })
 
@@ -129,6 +137,7 @@ function buildPayload(formData) {
     round_number: formData.round_number,
     date:         formData.date,
     course:       formData.course,
+    description:  formData.description,
     notes:        formData.notes,
     ...buildDurationPayload(formData),
   }
@@ -148,6 +157,8 @@ async function addRound() {
     form.value.duration = '1day'
     form.value.start_time = ''
     form.value.course = ''
+    form.value.description = ''
+    form.value.notes = ''
     load()
   } catch (e) {
     addError.value = e.response?.data?.error || localeStore.t('errorAddingRound')
@@ -169,6 +180,7 @@ function startEdit(r) {
     duration:     deriveDuration(r),
     start_time:   r.start_time || '',
     course:       r.course,
+    description:  r.description || r.notes || '',
     notes:        r.notes || '',
   }
 }

@@ -126,7 +126,8 @@ function buildIcs(items, currentDate = new Date()) {
     lines.push(`DTSTAMP:${now}`)
     lines.push(foldLine(`SUMMARY:${summary}`))
     if (location) lines.push(foldLine(`LOCATION:${location}`))
-    if (item.notes) lines.push(foldLine(`DESCRIPTION:${item.notes}`))
+    const description = item.description || item.notes || ''
+    if (description) lines.push(foldLine(`DESCRIPTION:${description}`))
 
     if (hasTime) {
       lines.push(`DTSTART;TZID=Europe/Stockholm:${icalDateTime(item.date, item.start_time)}`)
@@ -228,17 +229,18 @@ router.get('/:lang(vpga.ics|sv/vpga.ics|en/vpga.ics)', (req, res) => {
 router.get('/all', (req, res) => {
   try {
     const manualEvents = db.prepare(
-      'SELECT id, title, date, date_end, start_time, notes FROM events ORDER BY date, id'
-    ).all().map(e => ({ id: String(e.id), title: e.title, date: e.date, date_end: e.date_end || '', start_time: e.start_time || '', notes: e.notes || '', type: 'manual' }))
+      'SELECT id, title, date, date_end, start_time, description, notes FROM events ORDER BY date, id'
+    ).all().map(e => ({ id: String(e.id), title: e.title, date: e.date, date_end: e.date_end || '', start_time: e.start_time || '', description: e.description || e.notes || '', notes: e.notes || '', type: 'manual' }))
 
     const rounds = db.prepare(
-      'SELECT id, season, round_number, date, date_end, start_time, course, notes FROM rounds ORDER BY season, round_number'
+      'SELECT id, season, round_number, date, date_end, start_time, course, description, notes FROM rounds ORDER BY season, round_number'
     ).all().map(r => ({
       id: 'round-' + r.id,
       title: 'VPGA' + r.round_number + (r.course ? ' - ' + r.course : ''),
       date: r.date,
       date_end: r.date_end || '',
       start_time: r.start_time || '',
+      description: r.description || r.notes || '',
       notes: r.notes || '',
       type: 'round',
     }))
@@ -292,6 +294,7 @@ router.get('/all', (req, res) => {
       date: r.deadline_date,
       date_end: '',
       start_time: '',
+      description: '',
       notes: '',
       type: 'ompc_deadline',
     }))

@@ -43,7 +43,7 @@ router.get('/', requireAuth, (req, res) => {
 
 // Create a round
 router.post('/', requireAdmin, (req, res) => {
-  const { season, round_number, date, date_end, start_time, course, notes } = req.body
+  const { season, round_number, date, date_end, start_time, course, description, notes } = req.body
   if (!date) {
     return res.status(400).json({ error: 'Date is required' })
   }
@@ -52,8 +52,8 @@ router.post('/', requireAdmin, (req, res) => {
   }
   try {
     const r = db.prepare(
-      'INSERT INTO rounds (season, round_number, date, date_end, start_time, course, notes) VALUES (?,?,?,?,?,?,?)'
-    ).run(season, round_number, date, date_end || '', start_time || '', course.trim(), notes || '')
+      'INSERT INTO rounds (season, round_number, date, date_end, start_time, course, description, notes) VALUES (?,?,?,?,?,?,?,?)'
+    ).run(season, round_number, date, date_end || '', start_time || '', course.trim(), description || '', notes || '')
     res.status(201).json(db.prepare('SELECT * FROM rounds WHERE id = ?').get(r.lastInsertRowid))
   } catch (e) {
     res.status(400).json({ error: e.message })
@@ -62,7 +62,7 @@ router.post('/', requireAdmin, (req, res) => {
 
 // Update a round
 router.put('/:id', requireAdmin, (req, res) => {
-  const { season, round_number, date, date_end, start_time, course, notes } = req.body
+  const { season, round_number, date, date_end, start_time, course, description, notes } = req.body
   if (!date) {
     return res.status(400).json({ error: 'Date is required' })
   }
@@ -70,8 +70,8 @@ router.put('/:id', requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Course is required' })
   }
   try {
-    db.prepare('UPDATE rounds SET season=?, round_number=?, date=?, date_end=?, start_time=?, course=?, notes=? WHERE id=?')
-      .run(season, round_number, date, date_end || '', start_time || '', course.trim(), notes || '', req.params.id)
+    db.prepare('UPDATE rounds SET season=?, round_number=?, date=?, date_end=?, start_time=?, course=?, description=?, notes=? WHERE id=?')
+      .run(season, round_number, date, date_end || '', start_time || '', course.trim(), description || '', notes || '', req.params.id)
     const r = db.prepare('SELECT * FROM rounds WHERE id = ?').get(req.params.id)
     if (!r) return res.status(404).json({ error: 'Not found' })
     res.json(r)

@@ -35,8 +35,8 @@
               <input v-model="form.start_time" type="time" lang="sv" style="width:110px" required />
             </label>
             <label>
-              {{ localeStore.t('notes') }}
-              <input v-model="form.notes" type="text" style="min-width:200px" />
+              {{ localeStore.t('description') }}
+              <input v-model="form.description" type="text" style="min-width:200px" />
             </label>
           </div>
           <p v-if="addError" class="error">{{ addError }}</p>
@@ -53,7 +53,7 @@
           <th>{{ localeStore.t('eventTitle') }}</th>
           <th>{{ localeStore.t('date') }}</th>
           <th>{{ localeStore.t('duration') }}</th>
-          <th>{{ localeStore.t('notes') }}</th>
+          <th>{{ localeStore.t('description') }}</th>
           <th v-if="auth.isAdmin">{{ localeStore.t('edit') }}/{{ localeStore.t('delete') }}</th>
         </tr>
       </thead>
@@ -63,7 +63,7 @@
             <td>{{ ev.title }}</td>
             <td>{{ ev.date }}</td>
             <td>{{ fmt(ev) }}</td>
-            <td style="color:#6b7280;font-size:0.88rem">{{ ev.notes }}</td>
+            <td style="color:#6b7280;font-size:0.88rem">{{ ev.description }}</td>
             <td v-if="auth.isAdmin">
               <template v-if="ev.type === 'manual'">
                 <button @click="startEdit(ev)" style="margin-right:0.5em">{{ localeStore.t('edit') }}</button>
@@ -73,7 +73,7 @@
           </tr>
         </template>
         <tr v-if="allEvents.length === 0">
-          <td colspan="4" style="color:#9ca3af;text-align:center">{{ localeStore.t('noEventsYet') }}</td>
+          <td :colspan="auth.isAdmin ? 5 : 4" style="color:#9ca3af;text-align:center">{{ localeStore.t('noEventsYet') }}</td>
         </tr>
       </tbody>
     </table>
@@ -101,7 +101,7 @@ const form = ref({
   date:       '',
   duration:   '1day',
   start_time: '',
-  notes:      '',
+  description:'',
 })
 
 const fmt = (ev) => formatDuration(ev, localeStore.t)
@@ -110,7 +110,7 @@ function buildPayload(formData) {
   return {
     title:      formData.title,
     date:       formData.date,
-    notes:      formData.notes,
+    description: formData.description,
     ...buildDurationPayload(formData),
   }
 }
@@ -139,7 +139,7 @@ async function addEvent() {
   addError.value = ''
   try {
     await api.post('/api/events', buildPayload(form.value))
-    form.value = { title: '', date: '', duration: '1day', start_time: '', notes: '' }
+    form.value = { title: '', date: '', duration: '1day', start_time: '', description: '' }
     load()
   } catch (e) {
     addError.value = e.response?.data?.error || localeStore.t('errorAddingEvent')
@@ -156,13 +156,13 @@ function startEdit(ev) {
     date:       ev.date,
     duration:   deriveDuration(ev),
     start_time: ev.start_time || '',
-    notes:      ev.notes || '',
+    description: ev.description || ev.notes || '',
   }
 }
 
 function cancelEdit() {
   editing.value = null
-  form.value = { title: '', date: '', duration: '1day', start_time: '', notes: '' }
+  form.value = { title: '', date: '', duration: '1day', start_time: '', description: '' }
 }
 
 async function saveEdit() {
@@ -172,7 +172,7 @@ async function saveEdit() {
     await api.put(`/api/events/${editing.value.id}`,
       { ...buildPayload(form.value), id: undefined })
     editing.value = null
-    form.value = { title: '', date: '', duration: '1day', start_time: '', notes: '' }
+    form.value = { title: '', date: '', duration: '1day', start_time: '', description: '' }
     load()
   } catch (e) {
     addError.value = e.response?.data?.error || localeStore.t('errorAddingEvent')
