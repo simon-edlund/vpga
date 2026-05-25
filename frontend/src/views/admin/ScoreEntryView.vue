@@ -1,31 +1,36 @@
 <template>
-  <div>
-    <h2>{{ localeStore.t('enterScores') }}</h2>
+  <div class="page-stack">
+    <h1 class="page-title">{{ localeStore.t('enterScores') }}</h1>
 
-    <div class="controls score-entry-controls">
-      <label>
-        {{ localeStore.t('season') }}
-        <select v-model.number="selectedSeason" @change="loadRounds">
-          <option v-for="s in seasons" :key="s" :value="s">{{ s }}</option>
-        </select>
-      </label>
-      <label>
-        {{ localeStore.t('selectRound') }}
-        <select v-model="selectedRoundId" @change="loadScores">
-          <option value="">- {{ localeStore.t('selectRoundPlaceholder') }} -</option>
-          <option v-for="r in rounds" :key="r.id" :value="r.id">
-            VPGA{{ r.round_number }} - {{ r.date }}{{ r.course ? ' · ' + r.course : '' }}
-          </option>
-        </select>
-      </label>
+    <div class="controls-row">
+      <q-select
+        v-model="selectedSeason"
+        outlined
+        dense
+        :label="localeStore.t('season')"
+        :options="seasons"
+        style="min-width: 160px;"
+        @update:model-value="loadRounds"
+      />
+      <q-select
+        v-model="selectedRoundId"
+        outlined
+        dense
+        :label="localeStore.t('selectRound')"
+        :options="roundOptions"
+        emit-value
+        map-options
+        style="min-width: 320px;"
+        @update:model-value="loadScores"
+      />
     </div>
 
-    <template v-if="selectedRoundId && members.length > 0">
-      <div class="card">
-        <p class="score-help">
-          {{ localeStore.t('enterNetStrokesHelp') }}
-        </p>
-
+    <q-card v-if="selectedRoundId && members.length > 0" flat bordered class="surface-card section-card">
+      <q-card-section>
+        <p class="legend q-ma-none">{{ localeStore.t('enterNetStrokesHelp') }}</p>
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
         <div class="score-entry-list">
           <div class="score-entry-row score-entry-header">
             <span>{{ localeStore.t('player') }}</span>
@@ -33,48 +38,56 @@
           </div>
           <div v-for="m in members" :key="m.id" class="score-entry-row">
             <label :for="`score-${m.id}`">{{ m.name }}</label>
-            <input
+            <q-input
               :id="`score-${m.id}`"
               v-model="scoreInputs[m.id]"
+              dense
+              outlined
               type="number"
               min="50"
               max="200"
               :placeholder="localeStore.t('absentPlaceholder')"
-              class="score-input"
             />
           </div>
         </div>
-
         <div class="score-actions">
-          <button @click="saveScores">{{ localeStore.t('saveScores') }}</button>
-          <span v-if="saved" class="success">✓ {{ localeStore.t('saved') }}</span>
+          <q-btn color="primary" no-caps :label="localeStore.t('saveScores')" @click="saveScores" />
+          <q-banner v-if="saved" dense rounded class="bg-green-1 text-positive">✓ {{ localeStore.t('saved') }}</q-banner>
         </div>
-      </div>
-    </template>
+      </q-card-section>
+    </q-card>
 
-    <div v-else-if="!selectedRoundId && rounds.length > 0" class="card" style="color:#6b7280">
-      {{ localeStore.t('selectRoundAbove') }}
-    </div>
+    <q-card v-else-if="!selectedRoundId && rounds.length > 0" flat bordered class="surface-card">
+      <q-card-section class="text-grey-7">{{ localeStore.t('selectRoundAbove') }}</q-card-section>
+    </q-card>
 
-    <div v-else-if="seasons.length === 0" class="card" style="color:#6b7280">
-      {{ localeStore.t('noRoundsCreateFirst') }}
-    </div>
+    <q-card v-else-if="seasons.length === 0" flat bordered class="surface-card">
+      <q-card-section class="text-grey-7">{{ localeStore.t('noRoundsCreateFirst') }}</q-card-section>
+    </q-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import api from '../../api/index.js'
 import { useLocaleStore } from '../../stores/locale.js'
 
-const seasons        = ref([])
+const seasons = ref([])
 const selectedSeason = ref(new Date().getFullYear())
-const rounds         = ref([])
+const rounds = ref([])
 const selectedRoundId = ref('')
-const members        = ref([])
-const scoreInputs    = ref({})   // member_id -> string (number or '')
-const saved          = ref(false)
+const members = ref([])
+const scoreInputs = ref({})
+const saved = ref(false)
 const localeStore = useLocaleStore()
+
+const roundOptions = computed(() => [
+  { label: `- ${localeStore.t('selectRoundPlaceholder')} -`, value: '' },
+  ...rounds.value.map(r => ({
+    label: `VPGA${r.round_number} - ${r.date}${r.course ? ' · ' + r.course : ''}`,
+    value: r.id,
+  })),
+])
 
 async function loadSeasons() {
   const res = await api.get('/api/standings')
@@ -87,10 +100,10 @@ async function loadSeasons() {
 
 async function loadRounds() {
   const res = await api.get('/api/rounds', { params: { season: selectedSeason.value } })
-  rounds.value       = res.data
+  rounds.value = res.data
   selectedRoundId.value = ''
-  members.value      = []
-  scoreInputs.value  = {}
+  members.value = []
+  scoreInputs.value = {}
 }
 
 async function loadScores() {
@@ -103,12 +116,8 @@ async function loadScores() {
   ])
 
   members.value = membersRes.data.filter(m => m.active)
-
-  // Initialise all as blank (absent)
   scoreInputs.value = {}
   for (const m of members.value) scoreInputs.value[m.id] = ''
-
-  // Pre-populate with existing played scores
   for (const s of scoresRes.data.scores) {
     if (!s.absent && s.net_strokes !== null) {
       scoreInputs.value[s.member_id] = String(s.net_strokes)
@@ -121,45 +130,37 @@ async function saveScores() {
     .map(m => ({ member_id: m.id, raw: scoreInputs.value[m.id] }))
     .filter(s => s.raw !== '' && s.raw !== null && s.raw !== undefined)
     .map(s => ({ member_id: s.member_id, net_strokes: parseInt(s.raw, 10) }))
-    .filter(s => !isNaN(s.net_strokes))
+    .filter(s => !Number.isNaN(s.net_strokes))
 
   await api.put(`/api/rounds/${selectedRoundId.value}/scores`, { scores })
   saved.value = true
-  setTimeout(() => (saved.value = false), 4000)
+  setTimeout(() => {
+    saved.value = false
+  }, 4000)
 }
 
 onMounted(loadSeasons)
 </script>
 
 <style scoped>
-.score-help {
-  color: #6b7280;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
 .score-entry-list {
   border: 1px solid #e4ece7;
-  border-radius: 7px;
+  border-radius: 16px;
   overflow: hidden;
 }
 
 .score-entry-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 130px;
+  grid-template-columns: minmax(0, 1fr) 180px;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.8rem;
+  padding: 0.75rem 0.9rem;
   border-bottom: 1px solid #e9f0eb;
   background: #fff;
 }
 
 .score-entry-row:last-child {
   border-bottom: none;
-}
-
-.score-entry-row label {
-  min-width: 0;
 }
 
 .score-entry-header {
@@ -172,57 +173,26 @@ onMounted(loadSeasons)
   text-align: center;
 }
 
-.score-input {
-  width: 100%;
-  text-align: center;
-}
-
 .score-actions {
   margin-top: 1rem;
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 700px) {
-  .score-entry-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  .score-entry-controls label {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-  }
-
-  .score-entry-controls select {
-    width: 100%;
-    min-width: 0;
+  .score-entry-row {
+    grid-template-columns: 1fr;
   }
 
   .score-entry-header {
     display: none;
   }
 
-  .score-entry-row {
-    grid-template-columns: 1fr;
-    gap: 0.4rem;
-  }
-
-  .score-input {
-    text-align: left;
-  }
-
   .score-actions {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.65rem;
-  }
-
-  .score-actions button {
-    width: 100%;
   }
 }
 </style>

@@ -2,38 +2,43 @@
   <div class="ompc-view">
     <div class="page-head">
       <div>
-        <h1>{{ localeStore.t('ompcPlayerTitle') }}</h1>
+        <h1 class="page-title">{{ localeStore.t('ompcPlayerTitle') }}</h1>
         <p class="subtle">{{ localeStore.t('ompcPlayerIntro') }}</p>
       </div>
-      <label class="season-picker">
-        {{ localeStore.t('season') }}
-        <input v-model.number="season" type="number" min="2020" />
-      </label>
-      <button @click="fetchCup">{{ localeStore.t('loadSeason') }}</button>
+      <div class="controls-row">
+        <q-input v-model.number="season" outlined type="number" min="2020" :label="localeStore.t('season')" style="min-width: 140px;" />
+        <q-btn color="primary" no-caps :label="localeStore.t('loadSeason')" @click="fetchCup" />
+      </div>
     </div>
 
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-    <p v-if="loading" class="loading">{{ localeStore.t('loading') }}</p>
+    <q-banner v-if="errorMessage" dense rounded class="bg-red-1 text-negative">{{ errorMessage }}</q-banner>
+    <q-banner v-if="loading" dense rounded class="bg-grey-2 text-grey-8">{{ localeStore.t('loading') }}</q-banner>
 
     <template v-else>
-      <div v-if="!cup" class="card empty-state">
-        <p>{{ localeStore.t('noOmpcCupForSeason') }}</p>
-      </div>
+      <q-card v-if="!cup" flat bordered class="surface-card empty-state">
+        <q-card-section>
+          <p class="q-ma-none">{{ localeStore.t('noOmpcCupForSeason') }}</p>
+        </q-card-section>
+      </q-card>
 
-      <template v-else>
-        <section v-if="matches.length > 0" class="card section-card">
+      <q-card v-else-if="matches.length > 0" flat bordered class="surface-card section-card">
+        <q-card-section>
           <div class="section-head">
             <div>
-              <h2>{{ localeStore.t('ompcBracket') }}</h2>
+              <h2 class="card-title">{{ localeStore.t('ompcBracket') }}</h2>
               <p class="subtle">{{ localeStore.t('ompcBracketPlayerHelp') }}</p>
             </div>
           </div>
+        </q-card-section>
 
+        <q-separator />
+
+        <q-card-section>
           <div class="bracket-scroll">
             <div class="bracket-grid" :style="bracketGridStyle">
               <div
                 v-for="(round, colIdx) in bracketRounds"
-                :key="'header-' + round.roundNumber"
+                :key="`header-${round.roundNumber}`"
                 class="bracket-header-cell"
                 :style="{ gridColumn: colIdx + 1, gridRow: 1 }"
               >
@@ -42,49 +47,53 @@
                     <h3>{{ round.label }}</h3>
                     <p class="subtle">{{ round.matches.length }} {{ round.matches.length === 1 ? localeStore.t('matchSingular') : localeStore.t('matchPlural') }}</p>
                   </div>
-                  <div class="deadline-box readonly-deadline">
-                    <span class="deadline-label">{{ localeStore.t('deadline') }}</span>
-                    <span>{{ roundDeadline(round.roundNumber) }}</span>
-                  </div>
+                  <q-chip outline color="secondary" text-color="secondary">
+                    {{ localeStore.t('deadline') }}: {{ roundDeadline(round.roundNumber) }}
+                  </q-chip>
                 </div>
               </div>
 
-              <template v-for="match in bracketGridMatches" :key="'match-' + match.id">
+              <template v-for="match in bracketGridMatches" :key="`match-${match.id}`">
                 <article class="match-card" :style="{ gridColumn: match.gridColumn, gridRow: `${match.gridRow} / span 2` }">
                   <div class="match-meta">Match {{ matchDisplayNumbers.get(match.id) }}</div>
                   <div class="slot-readonly">{{ slotDisplay(match, 'player1') }}</div>
                   <div class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
                   <div v-if="match.winner_id" class="winner-state">{{ localeStore.t('winnerLabel', { name: memberName(match.winner_id) }) }}</div>
                   <div v-if="canManageResult(match)" class="result-actions">
-                    <button
-                      class="sm"
-                      :disabled="reportingMatchId === match.id"
+                    <q-btn
+                      dense
+                      color="primary"
+                      no-caps
+                      :disable="reportingMatchId === match.id"
+                      :label="reportingMatchId === match.id ? localeStore.t('saving') : localeStore.t('iWon')"
                       @click="reportResult(match, currentMemberId)"
-                    >
-                      {{ reportingMatchId === match.id ? localeStore.t('saving') : localeStore.t('iWon') }}
-                    </button>
-                    <button
-                      class="sm secondary"
-                      :disabled="reportingMatchId === match.id"
+                    />
+                    <q-btn
+                      dense
+                      outline
+                      color="secondary"
+                      no-caps
+                      :disable="reportingMatchId === match.id"
+                      :label="localeStore.t('playerWon', { name: opponentName(match) })"
                       @click="reportResult(match, opponentId(match))"
-                    >
-                      {{ localeStore.t('playerWon', { name: opponentName(match) }) }}
-                    </button>
-                    <button
+                    />
+                    <q-btn
                       v-if="match.winner_id"
-                      class="sm secondary"
-                      :disabled="reportingMatchId === match.id"
+                      dense
+                      flat
+                      color="secondary"
+                      no-caps
+                      :disable="reportingMatchId === match.id"
+                      :label="localeStore.t('resetResult')"
                       @click="resetResult(match)"
-                    >
-                      {{ localeStore.t('resetResult') }}
-                    </button>
+                    />
                   </div>
                 </article>
               </template>
             </div>
           </div>
-        </section>
-      </template>
+        </q-card-section>
+      </q-card>
     </template>
   </div>
 </template>
@@ -116,13 +125,11 @@ const bracketRounds = computed(() => {
     grouped.get(match.round).push(match)
   }
 
-  const totalRounds = grouped.size
-
   return [...grouped.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([roundNumber, roundMatches]) => ({
       roundNumber,
-      label: roundLabel(roundNumber, totalRounds),
+      label: roundLabel(roundNumber),
       matches: roundMatches.sort((a, b) => a.match_number - b.match_number),
     }))
 })
@@ -160,6 +167,31 @@ const bracketSize = computed(() => {
   return 2 ** totalRounds
 })
 
+const matchesSortedByRound = computed(() => {
+  const map = new Map()
+  for (const match of matches.value) {
+    if (!map.has(match.round)) map.set(match.round, [])
+    map.get(match.round).push(match)
+  }
+  for (const arr of map.values()) {
+    arr.sort((a, b) => a.match_number - b.match_number)
+  }
+  return map
+})
+
+const matchDisplayNumbers = computed(() => {
+  const map = new Map()
+  let counter = 1
+  const sortedRounds = [...matchesSortedByRound.value.keys()].sort((a, b) => a - b)
+  for (const round of sortedRounds) {
+    for (const match of matchesSortedByRound.value.get(round)) {
+      map.set(match.id, counter)
+      counter += 1
+    }
+  }
+  return map
+})
+
 function extractMemberId(token) {
   if (!token) return null
   try {
@@ -182,30 +214,6 @@ function roundLabel(roundNumber) {
   return localeStore.t('roundOf', { size: stageSize })
 }
 
-const matchesSortedByRound = computed(() => {
-  const map = new Map()
-  for (const match of matches.value) {
-    if (!map.has(match.round)) map.set(match.round, [])
-    map.get(match.round).push(match)
-  }
-  for (const arr of map.values()) {
-    arr.sort((a, b) => a.match_number - b.match_number)
-  }
-  return map
-})
-
-const matchDisplayNumbers = computed(() => {
-  const map = new Map()
-  let counter = 1
-  const sortedRounds = [...matchesSortedByRound.value.keys()].sort((a, b) => a - b)
-  for (const round of sortedRounds) {
-    for (const match of matchesSortedByRound.value.get(round)) {
-      map.set(match.id, counter++)
-    }
-  }
-  return map
-})
-
 function feederDisplayNumber(match, slot) {
   const roundMatches = matchesSortedByRound.value.get(match.round) || []
   const positionInRound = roundMatches.findIndex(m => m.id === match.id) + 1
@@ -220,7 +228,6 @@ function slotDisplay(match, slot) {
   if (slotValue) {
     return memberName(slotValue)
   }
-
   return localeStore.t('winnerOfMatch', { match: feederDisplayNumber(match, slot) })
 }
 
@@ -334,21 +341,9 @@ onMounted(async () => {
   align-items: end;
 }
 
-.season-picker {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.88rem;
-  color: #4b5563;
-}
-
-.subtle {
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
 .section-card {
   display: grid;
-  gap: 1.25rem;
+  gap: 0;
 }
 
 .empty-state {
@@ -388,25 +383,13 @@ onMounted(async () => {
   font-size: 0.82rem;
 }
 
-.deadline-box,
-.readonly-deadline {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  color: #4b5563;
-}
-
-.deadline-label {
-  font-weight: 600;
-}
-
 .match-card {
   position: relative;
   display: grid;
   gap: 0.3rem;
-  padding: 0.6rem 0.65rem;
+  padding: 0.75rem;
   border: 1px solid #d8e6dc;
-  border-radius: 10px;
+  border-radius: 16px;
   background: linear-gradient(180deg, #ffffff 0%, #f6fbf7 100%);
   box-shadow: 0 8px 24px rgba(27, 67, 50, 0.07);
 }
@@ -436,11 +419,11 @@ onMounted(async () => {
 }
 
 .slot-readonly {
-  min-height: 32px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  padding: 0.3rem 0.55rem;
-  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
   background: #f4f7f5;
   border: 1px solid #dbe8df;
   color: #4b5563;
@@ -450,7 +433,7 @@ onMounted(async () => {
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
-  margin-top: 0.1rem;
+  margin-top: 0.25rem;
 }
 
 .winner-state {

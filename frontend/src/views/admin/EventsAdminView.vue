@@ -1,120 +1,118 @@
 <template>
-  <div>
-    <h2>{{ localeStore.t('events') }}</h2>
+  <div class="page-stack">
+    <h1 class="page-title">{{ localeStore.t('events') }}</h1>
 
-    <div class="card">
-      <h3>{{ localeStore.t('addEvent') }}</h3>
-      <form @submit.prevent="addEvent">
-        <div class="row-gap">
-          <label>
-            {{ localeStore.t('eventTitle') }}
-            <input v-model="form.title" type="text" required style="min-width:200px" />
-          </label>
-          <label>
-            {{ localeStore.t('date') }}
-            <input v-model="form.date" type="date" lang="sv" required />
-          </label>
-          <label>
-            {{ localeStore.t('duration') }}
-            <select v-model="form.duration" style="width:130px">
-              <option value="1day">{{ localeStore.t('duration1Day') }}</option>
-              <option value="2days">{{ localeStore.t('duration2Days') }}</option>
-              <option value="timed">{{ localeStore.t('durationTimed') }}</option>
-            </select>
-          </label>
-          <label v-if="form.duration === 'timed'">
-            {{ localeStore.t('startTime') }}
-            <input v-model="form.start_time" type="time" lang="sv" style="width:110px" required />
-          </label>
-          <label>
-            {{ localeStore.t('notes') }}
-            <input v-model="form.notes" type="text" style="min-width:200px" />
-          </label>
-        </div>
-        <p v-if="addError" class="error">{{ addError }}</p>
-        <button type="submit">{{ localeStore.t('addEvent') }}</button>
-      </form>
-    </div>
+    <q-card flat bordered class="surface-card section-card">
+      <q-card-section>
+        <h2 class="card-title">{{ localeStore.t('addEvent') }}</h2>
+      </q-card-section>
+      <q-separator />
+      <q-card-section>
+        <q-form class="page-stack" @submit="addEvent">
+          <div class="form-grid">
+            <q-input v-model="form.title" outlined :label="localeStore.t('eventTitle')" required />
+            <q-input v-model="form.date" outlined type="date" :label="localeStore.t('date')" required />
+            <q-select v-model="form.duration" outlined :label="localeStore.t('duration')" :options="durationOptions" emit-value map-options />
+            <q-input v-if="form.duration === 'timed'" v-model="form.start_time" outlined type="time" :label="localeStore.t('startTime')" required />
+            <q-input v-model="form.notes" outlined :label="localeStore.t('notes')" />
+          </div>
+          <q-banner v-if="addError" dense rounded class="bg-red-1 text-negative">{{ addError }}</q-banner>
+          <div class="form-actions">
+            <q-btn type="submit" color="primary" no-caps :label="localeStore.t('addEvent')" />
+          </div>
+        </q-form>
+      </q-card-section>
+    </q-card>
 
-    <table>
-      <thead>
-        <tr>
-          <th>{{ localeStore.t('eventTitle') }}</th>
-          <th>{{ localeStore.t('date') }}</th>
-          <th>{{ localeStore.t('duration') }}</th>
-          <th>{{ localeStore.t('notes') }}</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <template v-for="ev in events" :key="ev.id">
-          <!-- view row -->
-          <tr v-if="editingId !== ev.id">
-            <td>{{ ev.title }}</td>
-            <td>{{ ev.date }}</td>
-            <td>{{ fmt(ev) }}</td>
-            <td style="color:#6b7280;font-size:0.88rem">{{ ev.notes }}</td>
-            <td style="white-space:nowrap">
-              <button class="sm" @click="startEdit(ev)" style="margin-right:4px">{{ localeStore.t('edit') }}</button>
-              <button class="sm danger" @click="deleteEvent(ev)">{{ localeStore.t('delete') }}</button>
-            </td>
-          </tr>
-          <!-- inline edit row -->
-          <tr v-else style="background:#f0f9ff">
-            <td><input v-model="editForm.title" type="text" style="min-width:160px" /></td>
-            <td><input v-model="editForm.date" type="date" lang="sv" /></td>
-            <td>
-              <select v-model="editForm.duration" style="width:120px">
-                <option value="1day">{{ localeStore.t('duration1Day') }}</option>
-                <option value="2days">{{ localeStore.t('duration2Days') }}</option>
-                <option value="timed">{{ localeStore.t('durationTimed') }}</option>
-              </select>
-              <input v-if="editForm.duration === 'timed'" v-model="editForm.start_time" type="time" lang="sv" style="width:100px;margin-left:4px" required />
-            </td>
-            <td><input v-model="editForm.notes" type="text" style="min-width:140px" /></td>
-            <td style="white-space:nowrap">
-              <button class="sm" @click="saveEdit" style="margin-right:4px">{{ localeStore.t('save') }}</button>
-              <button class="sm" @click="editingId = null">{{ localeStore.t('cancel') }}</button>
-            </td>
-          </tr>
-        </template>
-        <tr v-if="events.length === 0">
-          <td colspan="5" style="color:#9ca3af;text-align:center">{{ localeStore.t('noEventsYet') }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <q-card flat bordered class="table-card surface-table">
+      <q-card-section class="q-pa-none table-wrap">
+        <q-markup-table flat separator="cell" wrap-cells>
+          <thead>
+            <tr>
+              <th>{{ localeStore.t('eventTitle') }}</th>
+              <th>{{ localeStore.t('date') }}</th>
+              <th>{{ localeStore.t('duration') }}</th>
+              <th>{{ localeStore.t('notes') }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="ev in events" :key="ev.id" :class="{ 'bg-blue-1': editingId === ev.id }">
+              <template v-if="editingId !== ev.id">
+                <td>{{ ev.title }}</td>
+                <td>{{ ev.date }}</td>
+                <td>{{ fmt(ev) }}</td>
+                <td class="muted-text">{{ ev.notes }}</td>
+                <td>
+                  <div class="inline-actions">
+                    <q-btn dense flat no-caps color="secondary" :label="localeStore.t('edit')" @click="startEdit(ev)" />
+                    <q-btn dense flat no-caps color="negative" :label="localeStore.t('delete')" @click="deleteEvent(ev)" />
+                  </div>
+                </td>
+              </template>
+              <template v-else>
+                <td><q-input v-model="editForm.title" dense outlined /></td>
+                <td><q-input v-model="editForm.date" dense outlined type="date" /></td>
+                <td>
+                  <div class="page-stack" style="gap: 0.5rem;">
+                    <q-select v-model="editForm.duration" dense outlined :options="durationOptions" emit-value map-options />
+                    <q-input v-if="editForm.duration === 'timed'" v-model="editForm.start_time" dense outlined type="time" />
+                  </div>
+                </td>
+                <td><q-input v-model="editForm.notes" dense outlined /></td>
+                <td>
+                  <div class="inline-actions">
+                    <q-btn dense color="primary" no-caps :label="localeStore.t('save')" @click="saveEdit" />
+                    <q-btn dense flat no-caps color="secondary" :label="localeStore.t('cancel')" @click="editingId = null" />
+                  </div>
+                </td>
+              </template>
+            </tr>
+            <tr v-if="events.length === 0">
+              <td colspan="5" class="text-center text-grey-5">{{ localeStore.t('noEventsYet') }}</td>
+            </tr>
+          </tbody>
+        </q-markup-table>
+      </q-card-section>
+    </q-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import api from '../../api/index.js'
 import { useLocaleStore } from '../../stores/locale.js'
-import { addOneDay, deriveDuration, formatDuration, buildDurationPayload } from '../../utils/duration.js'
+import { deriveDuration, formatDuration, buildDurationPayload } from '../../utils/duration.js'
 
-const events    = ref([])
-const addError  = ref('')
+const events = ref([])
+const addError = ref('')
 const localeStore = useLocaleStore()
 const editingId = ref(null)
-const editForm  = ref({})
+const editForm = ref({})
 const form = ref({
-  title:      '',
-  date:       '',
-  duration:   '1day',
+  title: '',
+  date: '',
+  duration: '1day',
   start_time: '',
-  notes:      '',
+  notes: '',
 })
+
+const durationOptions = computed(() => [
+  { label: localeStore.t('duration1Day'), value: '1day' },
+  { label: localeStore.t('duration2Days'), value: '2days' },
+  { label: localeStore.t('durationTimed'), value: 'timed' },
+])
 
 function buildPayload(formData) {
   return {
-    title:      formData.title,
-    date:       formData.date,
-    notes:      formData.notes,
+    title: formData.title,
+    date: formData.date,
+    notes: formData.notes,
     ...buildDurationPayload(formData),
   }
 }
 
-const fmt = (ev) => formatDuration(ev, localeStore.t)
+const fmt = ev => formatDuration(ev, localeStore.t)
 
 async function load() {
   const res = await api.get('/api/events')
@@ -126,33 +124,33 @@ async function addEvent() {
   try {
     await api.post('/api/events', buildPayload(form.value))
     form.value = { title: '', date: '', duration: '1day', start_time: '', notes: '' }
-    load()
+    await load()
   } catch (e) {
     addError.value = e.response?.data?.error || localeStore.t('errorAddingEvent')
   }
 }
 
 async function deleteEvent(ev) {
-  if (!confirm(localeStore.t('deleteEventConfirm', { title: ev.title }))) return
+  if (!window.confirm(localeStore.t('deleteEventConfirm', { title: ev.title }))) return
   await api.delete(`/api/events/${ev.id}`)
-  load()
+  await load()
 }
 
 function startEdit(ev) {
   editingId.value = ev.id
   editForm.value = {
-    title:      ev.title,
-    date:       ev.date,
-    duration:   deriveDuration(ev),
+    title: ev.title,
+    date: ev.date,
+    duration: deriveDuration(ev),
     start_time: ev.start_time || '',
-    notes:      ev.notes || '',
+    notes: ev.notes || '',
   }
 }
 
 async function saveEdit() {
   await api.put(`/api/events/${editingId.value}`, buildPayload(editForm.value))
   editingId.value = null
-  load()
+  await load()
 }
 
 onMounted(load)

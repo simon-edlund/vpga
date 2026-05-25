@@ -1,0 +1,187 @@
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  font-size: 15px;
+  background: #f0f4f1;
+  color: #1a2e1f;
+}
+
+a {
+  color: inherit;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.app-layout {
+  min-height: 100vh;
+  background: #f0f4f1;
+}
+
+.app-toolbar {
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0.7rem 1rem;
+}
+
+.brand-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.app-page-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 6rem;
+}
+
+.page-stack {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.page-title {
+  margin: 0;
+  color: $primary;
+}
+
+.page-subtitle,
+.subtle,
+.legend,
+.muted-text {
+  color: #6b7280;
+}
+
+.legend,
+.muted-text,
+.page-subtitle {
+  font-size: 0.92rem;
+}
+
+.section-card,
+.surface-card,
+.table-card {
+  border-radius: 18px;
+}
+
+.card-title {
+  margin: 0;
+  color: $primary;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.form-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.form-actions,
+.inline-actions,
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.controls-row {
+  align-items: end;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.surface-table {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.surface-table .q-table,
+.surface-table .q-markup-table {
+  background: transparent;
+}
+
+.surface-table thead tr {
+  background: $primary;
+  color: white;
+}
+
+.surface-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.surface-table tbody tr:hover {
+  background: rgba(149, 213, 178, 0.14);
+}
+
+.surface-table td.best4 {
+  background: rgba(149, 213, 178, 0.28);
+  font-weight: 600;
+}
+
+.surface-table td.absent,
+.surface-table tr.absent-row td {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.surface-table td.total {
+  font-weight: 700;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: $secondary;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-wrap {
+  max-width: 420px;
+  margin: 3rem auto 0;
+}
+
+.footer-version {
+  opacity: 0.78;
+  font-size: 0.82rem;
+}
+
+.empty-state {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (max-width: 700px) {
+  .app-page-shell {
+    padding: 1rem 0.85rem 5.5rem;
+  }
+
+  .page-header {
+    align-items: stretch;
+  }
+}

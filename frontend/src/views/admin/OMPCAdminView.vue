@@ -2,146 +2,148 @@
   <div class="ompc-admin-view">
     <div class="page-head">
       <div>
-        <h1>{{ localeStore.t('ompcAdminTitle') }}</h1>
+        <h1 class="page-title">{{ localeStore.t('ompcAdminTitle') }}</h1>
         <p class="subtle">{{ localeStore.t('ompcAdminIntro') }}</p>
       </div>
-      <label class="season-picker">
-        {{ localeStore.t('season') }}
-        <input v-model.number="season" type="number" min="2020" />
-      </label>
-      <button @click="fetchCup">{{ localeStore.t('loadSeason') }}</button>
+      <div class="controls-row">
+        <q-input v-model.number="season" outlined type="number" min="2020" :label="localeStore.t('season')" style="min-width: 140px;" />
+        <q-btn color="primary" no-caps :label="localeStore.t('loadSeason')" @click="fetchCup" />
+      </div>
     </div>
 
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-    <p v-if="loading" class="loading">{{ localeStore.t('loading') }}</p>
+    <q-banner v-if="errorMessage" dense rounded class="bg-red-1 text-negative">{{ errorMessage }}</q-banner>
+    <q-banner v-if="loading" dense rounded class="bg-grey-2 text-grey-8">{{ localeStore.t('loading') }}</q-banner>
 
     <template v-else>
-      <div v-if="!cup" class="card empty-state">
-        <p>{{ localeStore.t('noOmpcCupForSeason') }}</p>
-        <button @click="createCup">{{ localeStore.t('createOmpcCup') }}</button>
-      </div>
+      <q-card v-if="!cup" flat bordered class="surface-card empty-state">
+        <q-card-section>
+          <p class="q-ma-none">{{ localeStore.t('noOmpcCupForSeason') }}</p>
+        </q-card-section>
+        <q-card-actions align="left">
+          <q-btn color="primary" no-caps :label="localeStore.t('createOmpcCup')" @click="createCup" />
+        </q-card-actions>
+      </q-card>
 
       <template v-else>
-        <section class="card section-card">
-          <div class="section-head">
-            <div>
-              <h2>{{ localeStore.t('ompcParticipants') }}</h2>
-              <p class="subtle">{{ localeStore.t('ompcParticipantsHelp') }}</p>
+        <q-card flat bordered class="surface-card section-card">
+          <q-card-section>
+            <div class="section-head">
+              <div>
+                <h2 class="card-title">{{ localeStore.t('ompcParticipants') }}</h2>
+                <p class="subtle">{{ localeStore.t('ompcParticipantsHelp') }}</p>
+              </div>
             </div>
-          </div>
+          </q-card-section>
 
-          <div class="participant-controls">
-            <select v-model="selectedMember" :disabled="addingParticipant">
-              <option :value="null">{{ localeStore.t('selectMember') }}</option>
-              <option v-for="member in selectableMembers" :key="member.id" :value="member.id">{{ member.name }}</option>
-            </select>
-            <button @click="addParticipant" :disabled="!selectedMember || addingParticipant">{{ localeStore.t('addParticipantToCup') }}</button>
-          </div>
-          <div class="participant-pool">
-            <div class="pool-column">
-              <h3>{{ localeStore.t('ompcInCup') }}</h3>
-              <div class="participant-status-list">
-                <div v-for="participant in cupParticipants" :key="participant.id" class="participant-status-row">
-                  <span class="participant-pill">{{ participant.name }}</span>
-                  <span :class="['assignment-badge', participantAssignmentStatus(participant.id).kind]">
-                    {{ participantAssignmentStatus(participant.id).label }}
-                  </span>
+          <q-separator />
+
+          <q-card-section class="page-stack">
+            <div class="participant-controls">
+              <q-select
+                v-model="selectedMember"
+                outlined
+                emit-value
+                map-options
+                :disable="addingParticipant"
+                :options="selectableMemberOptions"
+                :label="localeStore.t('selectMember')"
+                style="min-width: 260px;"
+              />
+              <q-btn color="primary" no-caps :disable="!selectedMember || addingParticipant" :label="localeStore.t('addParticipantToCup')" @click="addParticipant" />
+            </div>
+
+            <div class="participant-pool">
+              <div class="pool-column">
+                <h3>{{ localeStore.t('ompcInCup') }}</h3>
+                <div class="participant-status-list">
+                  <div v-for="participant in cupParticipants" :key="participant.id" class="participant-status-row">
+                    <q-chip color="green-1" text-color="primary">{{ participant.name }}</q-chip>
+                    <q-chip :color="participantAssignmentStatus(participant.id).kind === 'assigned' ? 'green-2' : 'grey-3'" :text-color="participantAssignmentStatus(participant.id).kind === 'assigned' ? 'primary' : 'grey-8'">
+                      {{ participantAssignmentStatus(participant.id).label }}
+                    </q-chip>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="section-actions">
-            <button @click="generateBracket" :disabled="cup.participants.length < 2">{{ localeStore.t('generateBracketTree') }}</button>
-            <button class="secondary" @click="resetSeason" :disabled="resettingSeason">
-              {{ resettingSeason ? localeStore.t('resetting') : localeStore.t('resetOmpcSeason') }}
-            </button>
-          </div>
-        </section>
-
-        <section v-if="matches.length > 0" class="card section-card">
-          <div class="section-head">
-            <div>
-              <h2>{{ localeStore.t('ompcBracket') }}</h2>
-              <p class="subtle">{{ localeStore.t('ompcBracketAdminHelp') }}</p>
+            <div class="section-actions">
+              <q-btn color="primary" no-caps :disable="cup.participants.length < 2" :label="localeStore.t('generateBracketTree')" @click="generateBracket" />
+              <q-btn outline color="secondary" no-caps :disable="resettingSeason" :label="resettingSeason ? localeStore.t('resetting') : localeStore.t('resetOmpcSeason')" @click="resetSeason" />
             </div>
-          </div>
+          </q-card-section>
+        </q-card>
 
-          <div class="bracket-scroll">
-            <div class="bracket-grid" :style="bracketGridStyle">
-              <!-- Header row -->
-              <div v-for="(round, colIdx) in bracketRounds" :key="'header-' + round.roundNumber" class="bracket-header-cell" :style="{ gridColumn: colIdx + 1, gridRow: 1 }">
-                <div class="round-header">
-                  <div class="round-header-top">
-                    <h3>{{ round.label }}</h3>
-                    <p class="subtle">{{ round.matches.length }} {{ round.matches.length === 1 ? localeStore.t('matchSingular') : localeStore.t('matchPlural') }}</p>
-                  </div>
-                  <div class="deadline-box">
-                    <label>
-                      {{ localeStore.t('deadline') }}
-                      <input v-model="deadlineDrafts[round.roundNumber]" type="date" lang="sv" />
-                    </label>
-                    <button class="sm secondary" @click="saveRoundDeadline(round.roundNumber)">{{ localeStore.t('save') }}</button>
+        <q-card v-if="matches.length > 0" flat bordered class="surface-card section-card">
+          <q-card-section>
+            <div class="section-head">
+              <div>
+                <h2 class="card-title">{{ localeStore.t('ompcBracket') }}</h2>
+                <p class="subtle">{{ localeStore.t('ompcBracketAdminHelp') }}</p>
+              </div>
+            </div>
+          </q-card-section>
+
+          <q-separator />
+
+          <q-card-section>
+            <div class="bracket-scroll">
+              <div class="bracket-grid" :style="bracketGridStyle">
+                <div v-for="(round, colIdx) in bracketRounds" :key="`header-${round.roundNumber}`" class="bracket-header-cell" :style="{ gridColumn: colIdx + 1, gridRow: 1 }">
+                  <div class="round-header">
+                    <div class="round-header-top">
+                      <h3>{{ round.label }}</h3>
+                      <p class="subtle">{{ round.matches.length }} {{ round.matches.length === 1 ? localeStore.t('matchSingular') : localeStore.t('matchPlural') }}</p>
+                    </div>
+                    <div class="deadline-box">
+                      <q-input v-model="deadlineDrafts[round.roundNumber]" outlined dense type="date" :label="localeStore.t('deadline')" />
+                      <q-btn dense outline color="secondary" no-caps :label="localeStore.t('save')" @click="saveRoundDeadline(round.roundNumber)" />
+                    </div>
                   </div>
                 </div>
+
+                <template v-for="match in bracketGridMatches" :key="`match-${match.id}`">
+                  <article class="match-card" :style="{ gridColumn: match.gridColumn, gridRow: `${match.gridRow} / span 2` }">
+                    <div class="match-meta">Match {{ matchDisplayNumbers.get(match.id) }}</div>
+                    <div class="slot-editor">
+                      <q-select
+                        v-if="isEditableSlot(match, 'player1')"
+                        outlined
+                        dense
+                        emit-value
+                        map-options
+                        :model-value="match.player1_id ?? ''"
+                        :options="slotOptions(match, 'player1')"
+                        :label="localeStore.t('selectPlayer')"
+                        @update:model-value="value => changeSlot(match, 'player1', value)"
+                      />
+                      <div v-else class="slot-readonly">{{ slotDisplay(match, 'player1') }}</div>
+                    </div>
+                    <div class="slot-editor">
+                      <q-select
+                        v-if="isEditableSlot(match, 'player2')"
+                        outlined
+                        dense
+                        emit-value
+                        map-options
+                        :model-value="match.player2_id ?? ''"
+                        :options="slotOptions(match, 'player2')"
+                        :label="localeStore.t('selectPlayer')"
+                        @update:model-value="value => changeSlot(match, 'player2', value)"
+                      />
+                      <div v-else class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
+                    </div>
+                    <div v-if="match.winner_id" class="winner-state">{{ localeStore.t('winnerLabel', { name: memberName(match.winner_id) }) }}</div>
+                    <div v-if="canManageResult(match)" class="result-actions">
+                      <q-btn dense color="primary" no-caps :disable="reportingMatchId === match.id" :label="reportingMatchId === match.id ? localeStore.t('saving') : localeStore.t('p1Won')" @click="setWinner(match, match.player1_id)" />
+                      <q-btn dense outline color="secondary" no-caps :disable="reportingMatchId === match.id" :label="localeStore.t('p2Won')" @click="setWinner(match, match.player2_id)" />
+                      <q-btn v-if="match.winner_id" dense flat color="secondary" no-caps :disable="reportingMatchId === match.id" :label="localeStore.t('reset')" @click="resetMatchResult(match)" />
+                    </div>
+                  </article>
+                </template>
               </div>
-              <!-- Matches -->
-              <template v-for="(match, idx) in bracketGridMatches" :key="'match-' + match.id">
-                <article class="match-card"
-                  :style="{ gridColumn: match.gridColumn, gridRow: `${match.gridRow} / span 2` }">
-                  <div class="match-meta">Match {{ matchDisplayNumbers.get(match.id) }}</div>
-                  <label class="slot-editor">
-                    <select
-                      v-if="isEditableSlot(match, 'player1')"
-                      :value="match.player1_id ?? ''"
-                      @change="changeSlot(match, 'player1', $event.target.value)"
-                    >
-                      <option value="">{{ localeStore.t('selectPlayer') }}</option>
-                      <option v-for="participant in slotOptions(match, 'player1')" :key="participant.id" :value="participant.id">{{ participant.name }}</option>
-                    </select>
-                    <div v-else class="slot-readonly">{{ slotDisplay(match, 'player1') }}</div>
-                  </label>
-                  <label class="slot-editor">
-                    <select
-                      v-if="isEditableSlot(match, 'player2')"
-                      :value="match.player2_id ?? ''"
-                      @change="changeSlot(match, 'player2', $event.target.value)"
-                    >
-                      <option value="">{{ localeStore.t('selectPlayer') }}</option>
-                      <option v-for="participant in slotOptions(match, 'player2')" :key="participant.id" :value="participant.id">{{ participant.name }}</option>
-                    </select>
-                    <div v-else class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
-                  </label>
-                  <div v-if="match.winner_id" class="winner-state">{{ localeStore.t('winnerLabel', { name: memberName(match.winner_id) }) }}</div>
-                  <div v-if="canManageResult(match)" class="result-actions">
-                    <button
-                      class="sm"
-                      :disabled="reportingMatchId === match.id"
-                      @click="setWinner(match, match.player1_id)"
-                    >
-                      {{ reportingMatchId === match.id ? localeStore.t('saving') : localeStore.t('p1Won') }}
-                    </button>
-                    <button
-                      class="sm secondary"
-                      :disabled="reportingMatchId === match.id"
-                      @click="setWinner(match, match.player2_id)"
-                    >
-                      {{ localeStore.t('p2Won') }}
-                    </button>
-                    <button
-                      v-if="match.winner_id"
-                      class="sm secondary"
-                      :disabled="reportingMatchId === match.id"
-                      @click="resetMatchResult(match)"
-                    >
-                      {{ localeStore.t('reset') }}
-                    </button>
-                  </div>
-                </article>
-              </template>
             </div>
-          </div>
-        </section>
+          </q-card-section>
+        </q-card>
       </template>
     </template>
   </div>
@@ -176,7 +178,6 @@ const matches = ref([])
 const loading = ref(true)
 const errorMessage = ref('')
 const deadlineDrafts = ref({})
-const MATCH_CARD_HEIGHT = 92
 const GRID_TRACK_HEIGHT = 44
 const GRID_ROW_GAP = 8
 
@@ -187,24 +188,20 @@ const cupParticipants = computed(() => {
     .filter(Boolean)
 })
 
-const initialRoundAssignments = computed(() => {
-  const assignments = new Map()
-
-  for (const match of matches.value.filter(match => match.round === 1)) {
-    if (match.player1_id) {
-      assignments.set(match.player1_id, { matchId: match.id, slot: 'player1' })
-    }
-    if (match.player2_id) {
-      assignments.set(match.player2_id, { matchId: match.id, slot: 'player2' })
-    }
-  }
-
-  return assignments
-})
-
 const selectableMembers = computed(() => {
   const existing = new Set(cup.value?.participants || [])
   return members.value.filter(member => !existing.has(member.id) && member.active)
+})
+
+const selectableMemberOptions = computed(() => selectableMembers.value.map(member => ({ label: member.name, value: member.id })))
+
+const initialRoundAssignments = computed(() => {
+  const assignments = new Map()
+  for (const match of matches.value.filter(match => match.round === 1)) {
+    if (match.player1_id) assignments.set(match.player1_id, { matchId: match.id, slot: 'player1' })
+    if (match.player2_id) assignments.set(match.player2_id, { matchId: match.id, slot: 'player2' })
+  }
+  return assignments
 })
 
 const bracketRounds = computed(() => {
@@ -214,13 +211,11 @@ const bracketRounds = computed(() => {
     grouped.get(match.round).push(match)
   }
 
-  const totalRounds = grouped.size
-
   return [...grouped.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([roundNumber, roundMatches]) => ({
       roundNumber,
-      label: roundLabel(roundNumber, totalRounds, roundMatches.length),
+      label: roundLabel(roundNumber),
       matches: roundMatches.sort((a, b) => a.match_number - b.match_number),
     }))
 })
@@ -229,13 +224,12 @@ const bracketGridMatches = computed(() => {
   if (!matches.value.length) return []
   const result = []
   for (const match of matches.value) {
-    const col = match.round
     const matchesInRound = matches.value.filter(m => m.round === match.round)
     const roundIdx = matchesInRound.findIndex(m => m.id === match.id)
     const roundOffset = 2 ** (match.round - 1)
     const rowStep = 2 ** match.round
     const row = 1 + roundOffset + roundIdx * rowStep
-    result.push({ ...match, gridColumn: col, gridRow: row })
+    result.push({ ...match, gridColumn: match.round, gridRow: row })
   }
   return result
 })
@@ -254,20 +248,10 @@ const bracketGridStyle = computed(() => {
 })
 
 const bracketSize = computed(() => {
-  // Calculate the total number of participants or matches in the bracket
   if (!matches.value.length) return 0
   const totalRounds = Math.max(...matches.value.map(m => m.round))
-  return 2 ** totalRounds // Assuming a full bracket with 2^n participants
+  return 2 ** totalRounds
 })
-
-function roundLabel(roundNumber, totalRounds, matchCount) {
-  const stageSize = Math.max(2, bracketSize.value / 2 ** (roundNumber - 1))
-  if (stageSize === 2) return localeStore.t('final')
-  if (stageSize === 4) return localeStore.t('semifinals')
-  if (stageSize === 8) return localeStore.t('quarterfinals')
-  if (stageSize === 16) return localeStore.t('roundOf16')
-  return localeStore.t('roundOf', { size: stageSize })
-}
 
 const matchesSortedByRound = computed(() => {
   const map = new Map()
@@ -275,9 +259,7 @@ const matchesSortedByRound = computed(() => {
     if (!map.has(match.round)) map.set(match.round, [])
     map.get(match.round).push(match)
   }
-  for (const arr of map.values()) {
-    arr.sort((a, b) => a.match_number - b.match_number)
-  }
+  for (const arr of map.values()) arr.sort((a, b) => a.match_number - b.match_number)
   return map
 })
 
@@ -287,11 +269,30 @@ const matchDisplayNumbers = computed(() => {
   const sortedRounds = [...matchesSortedByRound.value.keys()].sort((a, b) => a - b)
   for (const round of sortedRounds) {
     for (const match of matchesSortedByRound.value.get(round)) {
-      map.set(match.id, counter++)
+      map.set(match.id, counter)
+      counter += 1
     }
   }
   return map
 })
+
+const matchesByRound = computed(() => {
+  const map = new Map()
+  for (const match of matches.value) {
+    if (!map.has(match.round)) map.set(match.round, [])
+    map.get(match.round).push(match)
+  }
+  return map
+})
+
+function roundLabel(roundNumber) {
+  const stageSize = Math.max(2, bracketSize.value / 2 ** (roundNumber - 1))
+  if (stageSize === 2) return localeStore.t('final')
+  if (stageSize === 4) return localeStore.t('semifinals')
+  if (stageSize === 8) return localeStore.t('quarterfinals')
+  if (stageSize === 16) return localeStore.t('roundOf16')
+  return localeStore.t('roundOf', { size: stageSize })
+}
 
 function feederMatchNumber(matchNumber, slot) {
   return slot === 'player1' ? matchNumber * 2 - 1 : matchNumber * 2
@@ -307,10 +308,7 @@ function feederDisplayNumber(match, slot) {
 }
 
 function isEditableSlot(match, slot) {
-  if (match.round === 1) {
-    return true
-  }
-
+  if (match.round === 1) return true
   const previousRoundMatches = matchesByRound.value.get(match.round - 1) || []
   const expectedMatchNumber = feederMatchNumber(match.match_number, slot)
   return !previousRoundMatches.some(previousMatch => previousMatch.match_number === expectedMatchNumber)
@@ -318,12 +316,8 @@ function isEditableSlot(match, slot) {
 
 function slotDisplay(match, slot) {
   const slotValue = slot === 'player1' ? match.player1_id : match.player2_id
-  if (slotValue) {
-    return memberName(slotValue)
-  }
-
-  const sourceMatchNumber = feederDisplayNumber(match, slot)
-  return localeStore.t('winnerOfMatch', { match: sourceMatchNumber })
+  if (slotValue) return memberName(slotValue)
+  return localeStore.t('winnerOfMatch', { match: feederDisplayNumber(match, slot) })
 }
 
 function memberName(id) {
@@ -333,34 +327,25 @@ function memberName(id) {
 
 function hydrateDrafts() {
   const nextDeadlines = {}
-
   for (const match of matches.value) {
     if (!(match.round in nextDeadlines)) {
       nextDeadlines[match.round] = match.deadline_date || ''
     }
   }
-
   deadlineDrafts.value = nextDeadlines
 }
 
 function slotOptions(match, slot) {
   const currentValue = slot === 'player1' ? match.player1_id : match.player2_id
-  return cupParticipants.value.filter(participant => {
-    if (participant.id === currentValue) {
-      return true
-    }
-
-    if (isAssignedElsewhere(participant.id, match.id)) {
-      return false
-    }
-
-    const initialAssignment = initialRoundAssignments.value.get(participant.id)
-    if (!initialAssignment) {
-      return true
-    }
-
-    return initialAssignment.matchId === match.id && initialAssignment.slot === slot
-  })
+  return cupParticipants.value
+    .filter(participant => {
+      if (participant.id === currentValue) return true
+      if (isAssignedElsewhere(participant.id, match.id)) return false
+      const initialAssignment = initialRoundAssignments.value.get(participant.id)
+      if (!initialAssignment) return true
+      return initialAssignment.matchId === match.id && initialAssignment.slot === slot
+    })
+    .map(participant => ({ label: participant.name, value: participant.id }))
 }
 
 function isAssignedElsewhere(memberId, matchId) {
@@ -376,7 +361,6 @@ function participantAssignmentStatus(memberId) {
   if (!assignment) {
     return { kind: 'unassigned', label: localeStore.t('unassigned') }
   }
-
   const slotLabel = assignment.slot === 'player1' ? 'P1' : 'P2'
   return {
     kind: 'assigned',
@@ -421,7 +405,6 @@ async function fetchCup() {
 
 async function createCup() {
   errorMessage.value = ''
-
   try {
     await createOMPCup({ season: season.value, created_by: auth.token ? 1 : 1 })
     await fetchCup()
@@ -432,13 +415,10 @@ async function createCup() {
 
 async function resetSeason() {
   if (!cup.value || resettingSeason.value) return
-
   const confirmed = window.confirm(localeStore.t('resetOmpcSeasonConfirm', { season: season.value }))
   if (!confirmed) return
-
   resettingSeason.value = true
   errorMessage.value = ''
-
   try {
     await deleteOMPCup(season.value)
     cup.value = null
@@ -456,7 +436,6 @@ async function addParticipant() {
   if (!cup.value || !selectedMember.value) return
   addingParticipant.value = true
   errorMessage.value = ''
-
   try {
     await addOMPCParticipants(cup.value.id, [selectedMember.value])
     selectedMember.value = null
@@ -471,7 +450,6 @@ async function addParticipant() {
 async function generateBracket() {
   if (!cup.value) return
   errorMessage.value = ''
-
   try {
     await generateOMPCBracket(cup.value.id, deadlineDrafts.value)
     await fetchMatches()
@@ -482,7 +460,6 @@ async function generateBracket() {
 
 async function changeSlot(match, slot, memberId) {
   errorMessage.value = ''
-
   try {
     await updateOMPCMatchSlot(match.id, slot, memberId ? Number(memberId) : null)
     await fetchMatches()
@@ -495,7 +472,6 @@ async function setWinner(match, winnerId) {
   if (!winnerId || reportingMatchId.value) return
   reportingMatchId.value = match.id
   errorMessage.value = ''
-
   try {
     await updateOMPCMatchResult(match.id, winnerId)
     await fetchMatches()
@@ -510,7 +486,6 @@ async function resetMatchResult(match) {
   if (reportingMatchId.value) return
   reportingMatchId.value = match.id
   errorMessage.value = ''
-
   try {
     await updateOMPCMatchResult(match.id, null, 'pending')
     await fetchMatches()
@@ -524,7 +499,6 @@ async function resetMatchResult(match) {
 async function saveRoundDeadline(roundNumber) {
   if (!cup.value) return
   errorMessage.value = ''
-
   try {
     await updateOMPCRoundDeadline(cup.value.id, roundNumber, deadlineDrafts.value[roundNumber] || '')
     await fetchMatches()
@@ -533,23 +507,9 @@ async function saveRoundDeadline(roundNumber) {
   }
 }
 
-const matchesByRound = computed(() => {
-  const map = new Map();
-  for (const match of matches.value) {
-    if (!map.has(match.round)) {
-      map.set(match.round, []);
-    }
-    map.get(match.round).push(match);
-  }
-  return map;
-});
-
 onMounted(async () => {
-  console.log('Fetching members...')
   await fetchMembers()
-  console.log('Members fetched. Fetching cup...')
   await fetchCup()
-  console.log('Cup fetched.')
 })
 </script>
 
@@ -563,8 +523,6 @@ onMounted(async () => {
 .section-head,
 .participant-controls,
 .section-actions,
-.round-header,
-.match-footer,
 .participant-pool {
   display: flex;
   gap: 1rem;
@@ -577,21 +535,9 @@ onMounted(async () => {
   align-items: end;
 }
 
-.season-picker {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.88rem;
-  color: #4b5563;
-}
-
-.subtle {
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
 .section-card {
   display: grid;
-  gap: 1.25rem;
+  gap: 0;
 }
 
 .empty-state {
@@ -610,23 +556,6 @@ onMounted(async () => {
   gap: 0.75rem;
 }
 
-.chip-wrap {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.participant-pill {
-  border-radius: 999px;
-  padding: 0.45rem 0.8rem;
-  font-size: 0.88rem;
-}
-
-.participant-pill {
-  background: #eef2ef;
-  color: #345445;
-}
-
 .participant-status-list {
   display: grid;
   gap: 0.55rem;
@@ -639,58 +568,16 @@ onMounted(async () => {
   gap: 0.6rem;
 }
 
-.assignment-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.3rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-.assignment-badge.assigned {
-  background: #dceee4;
-  color: #1f5a3f;
-}
-
-.assignment-badge.unassigned {
-  background: #f2f4f7;
-  color: #667085;
-}
-
-.muted-wrap {
-  min-height: 2.5rem;
-}
-
 .bracket-scroll {
   overflow-x: auto;
   padding-bottom: 0.5rem;
 }
 
-.bracket-header-row {
-  display: flex;
-  gap: 1.5rem;
-  min-width: max-content;
-  margin-bottom: 0.5rem;
-}
 .bracket-header-cell {
   width: 280px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-}
-.bracket-grid {
-  display: flex;
-  gap: 1.5rem;
-  min-width: max-content;
-  align-items: center;
-}
-
-.round-column {
-  width: 280px;
-  display: grid;
-  gap: 1rem;
-  align-content: center;
 }
 
 .round-header {
@@ -712,34 +599,19 @@ onMounted(async () => {
   font-size: 0.82rem;
 }
 
-.deadline-box {
+.deadline-box,
+.slot-editor {
   display: grid;
-  gap: 0.4rem;
-  justify-items: stretch;
-}
-
-.deadline-box label,
-.slot-editor,
-.winner-picker {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  color: #4b5563;
-}
-
-.match-stack {
-  display: grid;
-  gap: var(--round-gap, 1rem);
-  justify-items: center;
+  gap: 0.45rem;
 }
 
 .match-card {
   position: relative;
   display: grid;
-  gap: 0.1rem;
-  padding: 0.4rem 0.65rem;
+  gap: 0.35rem;
+  padding: 0.75rem;
   border: 1px solid #d8e6dc;
-  border-radius: 10px;
+  border-radius: 16px;
   background: linear-gradient(180deg, #ffffff 0%, #f6fbf7 100%);
   box-shadow: 0 8px 24px rgba(27, 67, 50, 0.07);
 }
@@ -752,10 +624,6 @@ onMounted(async () => {
   width: 1.5rem;
   height: 1px;
   background: #b9d0c1;
-}
-
-.round-column:last-child .match-card::after {
-  display: none;
 }
 
 .match-meta {
@@ -772,20 +640,12 @@ onMounted(async () => {
   color: #64748b;
 }
 
-.slot-editor select {
-  width: 100%;
-  min-height: 32px;
-  height: 32px;
-  padding: 0.25rem 0.55rem;
-  line-height: 1.1;
-}
-
 .slot-readonly {
-  min-height: 32px;
+  min-height: 40px;
   display: flex;
   align-items: center;
-  padding: 0.3rem 0.55rem;
-  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
   background: #f4f7f5;
   border: 1px solid #dbe8df;
   color: #4b5563;
@@ -798,10 +658,6 @@ onMounted(async () => {
   margin-top: 0.15rem;
 }
 
-.result-actions > button {
-  min-width: 0;
-}
-
 .winner-state {
   font-size: 0.8rem;
   color: #1f5a3f;
@@ -810,10 +666,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 900px) {
-  .round-column {
-    width: 250px;
-  }
-
   .round-header-top {
     display: grid;
     white-space: normal;

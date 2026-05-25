@@ -1,34 +1,58 @@
 <template>
   <div class="login-wrap">
-    <div class="card">
-      <h2 class="login-title">⛳ VPGA</h2>
-      <form v-if="!setupToken" @submit.prevent="doLogin">
-        <div class="field">
-          <label>{{ localeStore.t('email') }}</label>
-          <input v-model="email" type="email" autocomplete="username" required autofocus />
-        </div>
-        <div class="field">
-          <label>{{ localeStore.t('password') }}</label>
-          <input v-model="password" type="password" autocomplete="current-password" />
-        </div>
-        <p v-if="error" class="error">{{ error }}</p>
-        <p class="legend">{{ localeStore.t('firstLoginHelp') }}</p>
-        <button type="submit" style="width:100%;margin-top:0.5rem">{{ localeStore.t('continue') }}</button>
-      </form>
-      <form v-else @submit.prevent="completeSetup">
-        <p style="margin-bottom:1rem">{{ localeStore.t('firstLoginVerified', { email: setupEmail }) }}</p>
-        <div class="field">
-          <label>{{ localeStore.t('newPassword') }}</label>
-          <input v-model="newPassword1" type="password" minlength="6" required autofocus />
-        </div>
-        <div class="field">
-          <label>{{ localeStore.t('repeatPassword') }}</label>
-          <input v-model="newPassword2" type="password" minlength="6" required />
-        </div>
-        <p v-if="error" class="error">{{ error }}</p>
-        <button type="submit" style="width:100%;margin-top:0.5rem">{{ localeStore.t('setPassword') }}</button>
-      </form>
-    </div>
+    <q-card flat bordered class="surface-card">
+      <q-card-section class="text-center q-pb-none">
+        <h2 class="card-title">⛳ VPGA</h2>
+      </q-card-section>
+
+      <q-card-section>
+        <q-form v-if="!setupToken" class="page-stack" @submit="doLogin">
+          <q-input
+            v-model="email"
+            type="email"
+            :label="localeStore.t('email')"
+            autocomplete="username"
+            outlined
+            autofocus
+            lazy-rules
+            :rules="[value => !!value || localeStore.t('email')]"
+          />
+          <q-input
+            v-model="password"
+            type="password"
+            :label="localeStore.t('password')"
+            autocomplete="current-password"
+            outlined
+          />
+          <q-banner v-if="error" dense rounded class="bg-red-1 text-negative">{{ error }}</q-banner>
+          <p class="legend">{{ localeStore.t('firstLoginHelp') }}</p>
+          <q-btn type="submit" color="primary" no-caps class="full-width" :label="localeStore.t('continue')" />
+        </q-form>
+
+        <q-form v-else class="page-stack" @submit="completeSetup">
+          <q-banner dense rounded class="bg-green-1 text-primary">
+            {{ localeStore.t('firstLoginVerified', { email: setupEmail }) }}
+          </q-banner>
+          <q-input
+            v-model="newPassword1"
+            type="password"
+            :label="localeStore.t('newPassword')"
+            outlined
+            minlength="6"
+            autofocus
+          />
+          <q-input
+            v-model="newPassword2"
+            type="password"
+            :label="localeStore.t('repeatPassword')"
+            outlined
+            minlength="6"
+          />
+          <q-banner v-if="error" dense rounded class="bg-red-1 text-negative">{{ error }}</q-banner>
+          <q-btn type="submit" color="primary" no-caps class="full-width" :label="localeStore.t('setPassword')" />
+        </q-form>
+      </q-card-section>
+    </q-card>
   </div>
 </template>
 

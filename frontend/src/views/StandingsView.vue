@@ -1,39 +1,44 @@
 <template>
-  <div>
-    <h2>{{ localeStore.t('seasonStandings') }}</h2>
-
-    <div class="controls">
-      <label>
-        {{ localeStore.t('season') }}
-        <select v-model="selectedSeason" @change="loadStandings">
-          <option v-for="s in seasons" :key="s" :value="s">{{ s }}</option>
-        </select>
-      </label>
+  <div class="page-stack">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">{{ localeStore.t('seasonStandings') }}</h1>
+      </div>
+      <div class="controls-row">
+        <q-select
+          v-model="selectedSeason"
+          outlined
+          dense
+          :label="localeStore.t('season')"
+          :options="seasons"
+          style="min-width: 160px;"
+          @update:model-value="loadStandings"
+        />
+      </div>
     </div>
 
-    <p v-if="loading" class="loading">{{ localeStore.t('loading') }}</p>
+    <q-banner v-if="loading" dense rounded class="bg-grey-2 text-grey-8">{{ localeStore.t('loading') }}</q-banner>
 
-    <template v-else-if="data">
-      <div v-if="data.rounds.length === 0" class="card">
+    <q-card v-else-if="data && data.rounds.length === 0" flat bordered class="surface-card">
+      <q-card-section>
         {{ localeStore.t('noRoundsForSeason', { season: selectedSeason }) }}
-      </div>
-      <div v-else class="table-wrap">
-        <table>
+      </q-card-section>
+    </q-card>
+
+    <q-card v-else-if="data" flat bordered class="table-card surface-table">
+      <q-card-section class="q-pa-none table-wrap">
+        <q-markup-table flat separator="cell" wrap-cells>
           <thead>
             <tr>
               <th>#</th>
               <th>{{ localeStore.t('player') }}</th>
-              <th
-                v-for="round in data.rounds"
-                :key="round.id"
-                style="text-align:center"
-              >
-                <router-link :to="'/round/' + round.id" style="color:#a7f3d0">
+              <th v-for="round in data.rounds" :key="round.id" class="text-center">
+                <router-link :to="`/round/${round.id}`" class="text-white">
                   VPGA{{ round.round_number }}
                 </router-link>
-                <div style="font-weight:400;font-size:0.78rem;opacity:0.8">{{ round.date }}</div>
+                <div class="text-caption text-weight-regular" style="opacity: 0.85;">{{ round.date }}</div>
               </th>
-              <th style="text-align:center">{{ localeStore.t('best4') }}</th>
+              <th class="text-center">{{ localeStore.t('best4') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -43,30 +48,29 @@
               <td
                 v-for="rs in member.roundScores"
                 :key="rs.round_id"
-                :class="['score-cell', rs.is_best4 ? 'best4' : '', rs.absent ? 'absent' : '']"
-                style="text-align:center"
+                :class="[rs.is_best4 ? 'best4' : '', rs.absent ? 'absent' : '']"
+                class="text-center"
               >
                 <span v-if="rs.score !== null">
                   {{ rs.score }}<sup v-if="rs.absent" :title="localeStore.t('absent')">*</sup>
                 </span>
-                <span v-else style="color:#ccc">–</span>
+                <span v-else class="text-grey-5">–</span>
               </td>
-              <td class="total" style="text-align:center">
-                {{ member.total ?? '–' }}
-              </td>
+              <td class="total text-center">{{ member.total ?? '–' }}</td>
             </tr>
           </tbody>
-        </table>
-        <p class="legend">
-          <strong>{{ localeStore.t('best4') }}</strong> {{ localeStore.t('best4Legend') }} &nbsp;
-          * {{ localeStore.t('absentLegend') }}
+        </q-markup-table>
+      </q-card-section>
+      <q-card-section>
+        <p class="legend q-ma-none">
+          <strong>{{ localeStore.t('best4') }}</strong> {{ localeStore.t('best4Legend') }} &nbsp; * {{ localeStore.t('absentLegend') }}
         </p>
-      </div>
-    </template>
+      </q-card-section>
+    </q-card>
 
-    <div v-else-if="!loading" class="card">
-      {{ localeStore.t('noSeasonsFound') }}
-    </div>
+    <q-card v-else-if="!loading" flat bordered class="surface-card">
+      <q-card-section>{{ localeStore.t('noSeasonsFound') }}</q-card-section>
+    </q-card>
   </div>
 </template>
 
@@ -75,10 +79,10 @@ import { ref, onMounted } from 'vue'
 import api from '../api/index.js'
 import { useLocaleStore } from '../stores/locale.js'
 
-const seasons        = ref([])
+const seasons = ref([])
 const selectedSeason = ref(new Date().getFullYear())
-const data           = ref(null)
-const loading        = ref(false)
+const data = ref(null)
+const loading = ref(false)
 const localeStore = useLocaleStore()
 
 async function loadSeasons() {
@@ -93,8 +97,9 @@ async function loadSeasons() {
 }
 
 async function loadStandings() {
+  if (!selectedSeason.value) return
   loading.value = true
-  data.value    = null
+  data.value = null
   try {
     const res = await api.get(`/api/standings/${selectedSeason.value}`)
     data.value = res.data
