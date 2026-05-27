@@ -16,7 +16,7 @@
           </label>
           <label>
             {{ localeStore.t('date') }}
-            <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input required style="width:160px;display:inline-block" />
+            <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" :format="formatDateISO" auto-apply text-input required style="width:160px;display:inline-block" />
           </label>
           <label>
             {{ localeStore.t('duration') }}
@@ -75,14 +75,14 @@
           <tr v-else style="background:#f0f9ff">
             <td><input v-model.number="editForm.season" type="number" style="width:70px" /></td>
             <td><input v-model.number="editForm.round_number" type="number" style="width:55px" /></td>
-            <td><VueDatePicker v-model="editForm.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input style="width:150px;display:inline-block" /></td>
+            <td><VueDatePicker v-model="editForm.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" :format="formatDateISO" :teleport="false" auto-apply text-input style="width:150px;display:inline-block" /></td>
             <td>
               <select v-model="editForm.duration" style="width:120px">
                 <option value="1day">{{ localeStore.t('duration1Day') }}</option>
                 <option value="2days">{{ localeStore.t('duration2Days') }}</option>
                 <option value="timed">{{ localeStore.t('durationTimed') }}</option>
               </select>
-              <VueDatePicker v-if="editForm.duration === 'timed'" v-model="editForm.start_time" model-type="HH:mm" time-picker :is24="true" auto-apply text-input required style="width:100px;margin-left:4px;display:inline-block" />
+              <VueDatePicker v-if="editForm.duration === 'timed'" v-model="editForm.start_time" model-type="HH:mm" time-picker :is24="true" :teleport="false" auto-apply text-input required style="width:100px;margin-left:4px;display:inline-block" />
             </td>
             <td><input v-model="editForm.course" type="text" style="min-width:130px" /></td>
             <td><input v-model="editForm.notes" type="text" style="min-width:130px" /></td>
@@ -105,6 +105,11 @@ import { ref, onMounted } from 'vue'
 import api from '../../api/index.js'
 import { useLocaleStore } from '../../stores/locale.js'
 import { addOneDay, deriveDuration, formatDuration, buildDurationPayload } from '../../utils/duration.js'
+
+function formatDateISO(d) {
+  if (!d) return ''
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 const rounds   = ref([])
 const addError = ref('')

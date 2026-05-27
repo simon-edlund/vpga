@@ -20,7 +20,7 @@
             </label>
             <label>
               {{ localeStore.t('date') }}
-              <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input required style="width:160px;display:inline-block" />
+              <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" :format="formatDateISO" auto-apply text-input required style="width:160px;display:inline-block" />
             </label>
             <label>
               {{ localeStore.t('duration') }}
@@ -86,6 +86,11 @@ import api from '../api/index.js'
 import { useLocaleStore } from '../stores/locale.js'
 import { useAuthStore } from '../stores/auth.js'
 import { deriveDuration, formatDuration, buildDurationPayload } from '../utils/duration.js'
+
+function formatDateISO(d) {
+  if (!d) return ''
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 const localeStore = useLocaleStore()
 const auth = useAuthStore()

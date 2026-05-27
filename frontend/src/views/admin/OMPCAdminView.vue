@@ -79,7 +79,7 @@
                   <div class="deadline-box">
                     <label>
                       {{ localeStore.t('deadline') }}
-                      <VueDatePicker v-model="deadlineDrafts[round.roundNumber]" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input style="width:150px;display:inline-block" />
+                      <VueDatePicker v-model="deadlineDrafts[round.roundNumber]" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" :format="formatDateISO" auto-apply text-input style="width:150px;display:inline-block" />
                     </label>
                     <button class="sm secondary" @click="saveRoundDeadline(round.roundNumber)">{{ localeStore.t('save') }}</button>
                   </div>
@@ -162,6 +162,11 @@ import api, {
 } from '../../api/index.js'
 import { useAuthStore } from '../../stores/auth.js'
 import { useLocaleStore } from '../../stores/locale.js'
+
+function formatDateISO(d) {
+  if (!d) return ''
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 const auth = useAuthStore()
 const localeStore = useLocaleStore()
