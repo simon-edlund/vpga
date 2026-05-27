@@ -20,7 +20,7 @@
             </label>
             <label>
               {{ localeStore.t('date') }}
-              <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input required style="width:160px;display:inline-block" />
+              <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input required style="width:160px;display:inline-block" />
             </label>
             <label>
               {{ localeStore.t('duration') }}

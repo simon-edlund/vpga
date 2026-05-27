@@ -16,7 +16,7 @@
           </label>
           <label>
             {{ localeStore.t('date') }}
-            <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input required style="width:160px;display:inline-block" />
+            <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input required style="width:160px;display:inline-block" />
           </label>
           <label>
             {{ localeStore.t('duration') }}
@@ -75,7 +75,7 @@
           <tr v-else style="background:#f0f9ff">
             <td><input v-model.number="editForm.season" type="number" style="width:70px" /></td>
             <td><input v-model.number="editForm.round_number" type="number" style="width:55px" /></td>
-            <td><VueDatePicker v-model="editForm.date" model-type="yyyy-MM-dd" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input style="width:150px;display:inline-block" /></td>
+            <td><VueDatePicker v-model="editForm.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input style="width:150px;display:inline-block" /></td>
             <td>
               <select v-model="editForm.duration" style="width:120px">
                 <option value="1day">{{ localeStore.t('duration1Day') }}</option>

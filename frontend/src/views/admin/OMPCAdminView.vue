@@ -79,7 +79,7 @@
                   <div class="deadline-box">
                     <label>
                       {{ localeStore.t('deadline') }}
-                      <VueDatePicker v-model="deadlineDrafts[round.roundNumber]" model-type="yyyy-MM-dd" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input style="width:150px;display:inline-block" />
+                      <VueDatePicker v-model="deadlineDrafts[round.roundNumber]" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" format="yyyy-MM-dd" auto-apply text-input style="width:150px;display:inline-block" />
                     </label>
                     <button class="sm secondary" @click="saveRoundDeadline(round.roundNumber)">{{ localeStore.t('save') }}</button>
                   </div>
