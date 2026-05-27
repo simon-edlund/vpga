@@ -52,9 +52,16 @@
               <template v-for="match in bracketGridMatches" :key="'match-' + match.id">
                 <article class="match-card" :style="{ gridColumn: match.gridColumn, gridRow: `${match.gridRow} / span 2` }">
                   <div class="match-meta">Match {{ matchDisplayNumbers.get(match.id) }}</div>
-                  <div class="slot-readonly">{{ slotDisplay(match, 'player1') }}</div>
-                  <div class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
-                  <div v-if="match.winner_id" class="winner-state">{{ localeStore.t('winnerLabel', { name: memberName(match.winner_id) }) }}</div>
+                  <div class="slot-readonly">
+                    <template v-if="isWinner(match, 'player1')">🏅 <strong>{{ slotDisplay(match, 'player1') }}</strong></template>
+                    <em v-else-if="isWinnerPlaceholder(match, 'player1')">{{ slotDisplay(match, 'player1') }}</em>
+                    <template v-else>{{ slotDisplay(match, 'player1') }}</template>
+                  </div>
+                  <div class="slot-readonly">
+                    <template v-if="isWinner(match, 'player2')">🏅 <strong>{{ slotDisplay(match, 'player2') }}</strong></template>
+                    <em v-else-if="isWinnerPlaceholder(match, 'player2')">{{ slotDisplay(match, 'player2') }}</em>
+                    <template v-else>{{ slotDisplay(match, 'player2') }}</template>
+                  </div>
                   <div v-if="canManageResult(match)" class="result-actions">
                     <button
                       class="sm"
@@ -213,6 +220,19 @@ function feederDisplayNumber(match, slot) {
   const feederPosition = slot === 'player1' ? 2 * positionInRound - 1 : 2 * positionInRound
   const feederMatch = prevRoundMatches[feederPosition - 1]
   return feederMatch ? matchDisplayNumbers.value.get(feederMatch.id) : null
+}
+
+function getSlotValue(match, slot) {
+  return slot === 'player1' ? match.player1_id : match.player2_id
+}
+
+function isWinner(match, slot) {
+  const slotValue = getSlotValue(match, slot)
+  return !!slotValue && slotValue === match.winner_id
+}
+
+function isWinnerPlaceholder(match, slot) {
+  return !getSlotValue(match, slot)
 }
 
 function slotDisplay(match, slot) {

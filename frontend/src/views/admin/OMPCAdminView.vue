@@ -99,7 +99,11 @@
                       <option value="">{{ localeStore.t('selectPlayer') }}</option>
                       <option v-for="participant in slotOptions(match, 'player1')" :key="participant.id" :value="participant.id">{{ participant.name }}</option>
                     </select>
-                    <div v-else class="slot-readonly">{{ slotDisplay(match, 'player1') }}</div>
+                    <div v-else class="slot-readonly">
+                      <template v-if="isWinner(match, 'player1')">🏅 <strong>{{ slotDisplay(match, 'player1') }}</strong></template>
+                      <em v-else-if="isWinnerPlaceholder(match, 'player1')">{{ slotDisplay(match, 'player1') }}</em>
+                      <template v-else>{{ slotDisplay(match, 'player1') }}</template>
+                    </div>
                   </label>
                   <label class="slot-editor">
                     <select
@@ -110,9 +114,12 @@
                       <option value="">{{ localeStore.t('selectPlayer') }}</option>
                       <option v-for="participant in slotOptions(match, 'player2')" :key="participant.id" :value="participant.id">{{ participant.name }}</option>
                     </select>
-                    <div v-else class="slot-readonly">{{ slotDisplay(match, 'player2') }}</div>
+                    <div v-else class="slot-readonly">
+                      <template v-if="isWinner(match, 'player2')">🏅 <strong>{{ slotDisplay(match, 'player2') }}</strong></template>
+                      <em v-else-if="isWinnerPlaceholder(match, 'player2')">{{ slotDisplay(match, 'player2') }}</em>
+                      <template v-else>{{ slotDisplay(match, 'player2') }}</template>
+                    </div>
                   </label>
-                  <div v-if="match.winner_id" class="winner-state">{{ localeStore.t('winnerLabel', { name: memberName(match.winner_id) }) }}</div>
                   <div v-if="canManageResult(match)" class="result-actions">
                     <button
                       class="sm"
@@ -307,6 +314,8 @@ function feederDisplayNumber(match, slot) {
 }
 
 function isEditableSlot(match, slot) {
+  if (match.winner_id) return false
+
   if (match.round === 1) {
     return true
   }
@@ -314,6 +323,19 @@ function isEditableSlot(match, slot) {
   const previousRoundMatches = matchesByRound.value.get(match.round - 1) || []
   const expectedMatchNumber = feederMatchNumber(match.match_number, slot)
   return !previousRoundMatches.some(previousMatch => previousMatch.match_number === expectedMatchNumber)
+}
+
+function getSlotValue(match, slot) {
+  return slot === 'player1' ? match.player1_id : match.player2_id
+}
+
+function isWinner(match, slot) {
+  const slotValue = getSlotValue(match, slot)
+  return !!slotValue && slotValue === match.winner_id
+}
+
+function isWinnerPlaceholder(match, slot) {
+  return !getSlotValue(match, slot)
 }
 
 function slotDisplay(match, slot) {
