@@ -12,7 +12,7 @@
           </label>
           <label>
             {{ localeStore.t('date') }}
-            <input v-model="form.date" type="date" lang="sv" required />
+            <VueDatePicker v-model="form.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" :format="formatDateISO" auto-apply text-input required style="width:160px;display:inline-block" />
           </label>
           <label>
             {{ localeStore.t('duration') }}
@@ -24,7 +24,7 @@
           </label>
           <label v-if="form.duration === 'timed'">
             {{ localeStore.t('startTime') }}
-            <input v-model="form.start_time" type="time" lang="sv" style="width:110px" required />
+            <VueDatePicker v-model="form.start_time" model-type="HH:mm" time-picker :is24="true" auto-apply text-input required style="width:110px;display:inline-block" />
           </label>
           <label>
             {{ localeStore.t('notes') }}
@@ -62,14 +62,14 @@
           <!-- inline edit row -->
           <tr v-else style="background:#f0f9ff">
             <td><input v-model="editForm.title" type="text" style="min-width:160px" /></td>
-            <td><input v-model="editForm.date" type="date" lang="sv" /></td>
+            <td><VueDatePicker v-model="editForm.date" model-type="yyyy-MM-dd" locale="sv" :enable-time-picker="false" :week-start="1" :format="formatDateISO" :teleport="false" auto-apply text-input style="width:150px;display:inline-block" /></td>
             <td>
               <select v-model="editForm.duration" style="width:120px">
                 <option value="1day">{{ localeStore.t('duration1Day') }}</option>
                 <option value="2days">{{ localeStore.t('duration2Days') }}</option>
                 <option value="timed">{{ localeStore.t('durationTimed') }}</option>
               </select>
-              <input v-if="editForm.duration === 'timed'" v-model="editForm.start_time" type="time" lang="sv" style="width:100px;margin-left:4px" required />
+              <VueDatePicker v-if="editForm.duration === 'timed'" v-model="editForm.start_time" model-type="HH:mm" time-picker :is24="true" :teleport="false" auto-apply text-input required style="width:100px;margin-left:4px;display:inline-block" />
             </td>
             <td><input v-model="editForm.notes" type="text" style="min-width:140px" /></td>
             <td style="white-space:nowrap">
@@ -91,6 +91,15 @@ import { ref, onMounted } from 'vue'
 import api from '../../api/index.js'
 import { useLocaleStore } from '../../stores/locale.js'
 import { addOneDay, deriveDuration, formatDuration, buildDurationPayload } from '../../utils/duration.js'
+
+function formatDateISO(value) {
+  if (!value) return ''
+  const d = Array.isArray(value) ? value[0] : value
+  if (!d) return ''
+  if (typeof d === 'string') return d
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 const events    = ref([])
 const addError  = ref('')
