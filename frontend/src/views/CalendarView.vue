@@ -87,8 +87,12 @@ import { useLocaleStore } from '../stores/locale.js'
 import { useAuthStore } from '../stores/auth.js'
 import { deriveDuration, formatDuration, buildDurationPayload } from '../utils/duration.js'
 
-function formatDateISO(d) {
+function formatDateISO(value) {
+  if (!value) return ''
+  const d = Array.isArray(value) ? value[0] : value
   if (!d) return ''
+  if (typeof d === 'string') return d
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return ''
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
